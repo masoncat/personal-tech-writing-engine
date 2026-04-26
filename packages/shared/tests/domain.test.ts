@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { TaskStage } from '../src/domain.js';
+import { TaskStage } from '../src/index.js';
 
-describe('shared domain bootstrap', () => {
-  it('exposes the task stages needed by the workflow', () => {
-    expect(TaskStage.Created).toBe('created');
-    expect(TaskStage.Exported).toBe('exported');
+describe('shared domain', () => {
+  it('defines the forward-only workflow stages', () => {
+    expect(Object.values(TaskStage)).toEqual([
+      'created',
+      'collecting_materials',
+      'bedrock_review',
+      'outline_review',
+      'draft_ready',
+      'rewriting',
+      'exported',
+    ]);
   });
 });
