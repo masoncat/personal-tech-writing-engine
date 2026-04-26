@@ -11,6 +11,7 @@ import type {
 import { DEFAULT_BASE_URL, type ApiClientLike } from '../client/api-client.js';
 import {
   OUTPUT_FORMATS,
+  createChoiceParser,
   type OutputFormat,
   type Writer,
   writeRenderedOutput,
@@ -54,9 +55,17 @@ export const registerMaterialCommands = (
       .command('add')
       .description('Add material to a task')
       .argument('<taskId>', 'Task identifier')
-      .requiredOption('--type <type>', 'Material type')
+      .requiredOption(
+        '--type <type>',
+        `Material type (${MATERIAL_TYPES.join(', ')})`,
+        createChoiceParser(MATERIAL_TYPES, '--type'),
+      )
       .requiredOption('--title <title>', 'Material title')
-      .requiredOption('--source <source>', 'Material source')
+      .requiredOption(
+        '--source <source>',
+        `Material source (${MATERIAL_SOURCES.join(', ')})`,
+        createChoiceParser(MATERIAL_SOURCES, '--source'),
+      )
       .requiredOption('--content <content>', 'Material content')
       .option('--relative-path <path>', 'Relative path for file or obsidian sources')
       .option('--vault-path <path>', 'Vault path for obsidian sources')
@@ -153,4 +162,9 @@ const buildAddMaterialRequest = (options: AddMaterialOptions): AddMaterialReques
 const withCommonOptions = <T extends Command>(command: T): T =>
   command
     .option('--base-url <url>', 'PTCE API base URL', DEFAULT_BASE_URL)
-    .option('--render <format>', `Output format (${OUTPUT_FORMATS.join(', ')})`, OUTPUT_FORMATS[1]);
+    .option(
+      '--render <format>',
+      `Output format (${OUTPUT_FORMATS.join(', ')})`,
+      createChoiceParser(OUTPUT_FORMATS, '--render'),
+      OUTPUT_FORMATS[1],
+    );

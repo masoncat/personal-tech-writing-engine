@@ -11,6 +11,7 @@ import type {
 import { DEFAULT_BASE_URL, type ApiClientLike } from '../client/api-client.js';
 import {
   OUTPUT_FORMATS,
+  createChoiceParser,
   type OutputFormat,
   type Writer,
   writeRenderedOutput,
@@ -51,9 +52,22 @@ export const registerExportCommands = (
       .description('Export a version to local or Obsidian output')
       .argument('<taskId>', 'Task identifier')
       .requiredOption('--version-id <versionId>', 'Version identifier')
-      .requiredOption('--channel <channel>', 'Export channel')
-      .requiredOption('--format <format>', 'Export format')
-      .option('--target <target>', 'Export target', 'local')
+      .requiredOption(
+        '--channel <channel>',
+        `Export channel (${EXPORT_CHANNELS.join(', ')})`,
+        createChoiceParser(EXPORT_CHANNELS, '--channel'),
+      )
+      .requiredOption(
+        '--format <format>',
+        `Export format (${EXPORT_FORMATS.join(', ')})`,
+        createChoiceParser(EXPORT_FORMATS, '--format'),
+      )
+      .option(
+        '--target <target>',
+        `Export target (${EXPORT_TARGETS.join(', ')})`,
+        createChoiceParser(EXPORT_TARGETS, '--target'),
+        'local',
+      )
       .option('--output-path <path>', 'Relative or local output path')
       .option('--vault-path <path>', 'Obsidian vault path')
       .action(async (taskId: string, options: ExportOptions) => {
@@ -97,4 +111,9 @@ const buildExportRequest = (options: ExportOptions): GenerateExportRequest => {
 const withCommonOptions = <T extends Command>(command: T): T =>
   command
     .option('--base-url <url>', 'PTCE API base URL', DEFAULT_BASE_URL)
-    .option('--render <format>', `Output format (${OUTPUT_FORMATS.join(', ')})`, OUTPUT_FORMATS[1]);
+    .option(
+      '--render <format>',
+      `Output format (${OUTPUT_FORMATS.join(', ')})`,
+      createChoiceParser(OUTPUT_FORMATS, '--render'),
+      OUTPUT_FORMATS[1],
+    );

@@ -5,6 +5,7 @@ import type { CreateTaskRequest, TaskEnvelope } from '@ptce/shared';
 import { DEFAULT_BASE_URL, type ApiClientLike } from '../client/api-client.js';
 import {
   OUTPUT_FORMATS,
+  createChoiceParser,
   type OutputFormat,
   type Writer,
   writeRenderedOutput,
@@ -59,4 +60,9 @@ export const registerTaskCommands = (
 const withCommonOptions = <T extends Command>(command: T): T =>
   command
     .option('--base-url <url>', 'PTCE API base URL', DEFAULT_BASE_URL)
-    .option('--render <format>', `Output format (${OUTPUT_FORMATS.join(', ')})`, OUTPUT_FORMATS[1]);
+    .option(
+      '--render <format>',
+      `Output format (${OUTPUT_FORMATS.join(', ')})`,
+      createChoiceParser(OUTPUT_FORMATS, '--render'),
+      OUTPUT_FORMATS[1],
+    );
