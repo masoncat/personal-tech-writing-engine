@@ -6,8 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "test": "vitest --run",
+    "test": "vitest",
     "test:watch": "vitest",
     "dev:server": "npm run dev --workspace @ptce/mock-server",
     "dev:cli": "npm run dev --workspace @ptce/cli"

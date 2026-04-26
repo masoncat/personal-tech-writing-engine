@@ -4,5 +4,4 @@ export default defineWorkspace([
   'packages/shared',
   'packages/mock-server',
   'packages/cli',
-  'tests/e2e',
 ]);
