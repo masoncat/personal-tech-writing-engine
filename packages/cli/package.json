@@ -1,0 +1,20 @@
+{
+  "name": "@ptce/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "ptce": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@ptce/shared": "0.1.0",
+    "commander": "^14.0.0",
+    "zod": "^3.24.3"
+  }
+}

@@ -1,0 +1,5 @@
+node_modules
+dist
+.ptce-data/*
+!.ptce-data/.gitkeep
+coverage
