@@ -37,4 +37,13 @@ export class MaterialRepository {
     const materials = await this.store.readAll();
     return materials.filter((material) => material.taskId === taskId);
   }
+
+  async remove(materialId: string): Promise<void> {
+    const materials = await this.store.readAll();
+    const nextMaterials = materials.filter((material) => material.id !== materialId);
+
+    if (nextMaterials.length !== materials.length) {
+      await this.store.writeAll(nextMaterials);
+    }
+  }
 }

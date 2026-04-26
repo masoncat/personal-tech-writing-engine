@@ -10,16 +10,34 @@ import {
 import type { MaterialService } from '../services/material-service.js';
 import { AppError } from '../workflow/stage-guards.js';
 
-const addMaterialSchema = z.object({
+const materialBaseSchema = {
   type: z.enum(['prompt', 'note', 'repo', 'article', 'draft', 'reference']),
   title: z.string().trim().min(1),
-  source: z.enum(['inline', 'file', 'obsidian']),
   content: z.string().trim().min(1),
-  vaultPath: z.string().trim().min(1).optional(),
-  relativePath: z.string().trim().min(1).optional(),
   frontmatter: z.record(z.string(), z.unknown()).optional(),
   tags: z.array(z.string()).optional(),
-});
+};
+
+const addMaterialSchema = z.discriminatedUnion('source', [
+  z.object({
+    ...materialBaseSchema,
+    source: z.literal('inline'),
+    vaultPath: z.never().optional(),
+    relativePath: z.never().optional(),
+  }),
+  z.object({
+    ...materialBaseSchema,
+    source: z.literal('file'),
+    relativePath: z.string().trim().min(1),
+    vaultPath: z.never().optional(),
+  }),
+  z.object({
+    ...materialBaseSchema,
+    source: z.literal('obsidian'),
+    vaultPath: z.string().trim().min(1),
+    relativePath: z.string().trim().min(1),
+  }),
+]);
 
 const taskParamsSchema = z.object({
   taskId: z.string().trim().min(1),
