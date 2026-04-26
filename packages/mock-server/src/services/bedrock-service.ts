@@ -75,7 +75,7 @@ export class BedrockService {
   }
 
   async getLatestConfirmed(taskId: string): Promise<InformationBedrock> {
-    const bedrock = await this.bedrockRepository.getLatestByTask(taskId);
+    const bedrock = await this.bedrockRepository.getLatestConfirmedByTask(taskId);
 
     if (!bedrock?.confirmed) {
       throw new AppError(

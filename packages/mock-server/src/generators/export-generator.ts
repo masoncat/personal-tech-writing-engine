@@ -8,6 +8,9 @@ import type {
   ExportTarget,
   WritingTask,
 } from '@ptce/shared';
+import { ErrorCode } from '@ptce/shared';
+
+import { AppError } from '../workflow/stage-guards.js';
 
 export interface RenderExportInput {
   task: WritingTask;
@@ -56,12 +59,31 @@ export const writeArtifact = async ({
 }: WriteArtifactInput): Promise<ArtifactWriteResult> => {
   if (target === 'obsidian') {
     if (!vaultPath || !outputPath) {
-      throw new Error('Obsidian exports require vaultPath and outputPath.');
+      throw new AppError(
+        ErrorCode.InvalidArgument,
+        'Obsidian exports require vaultPath and outputPath.',
+        { outputPath, vaultPath },
+        400,
+      );
+    }
+
+    if (isAbsolute(outputPath)) {
+      throw new AppError(
+        ErrorCode.InvalidArgument,
+        'Obsidian export path must be relative to the vault.',
+        { outputPath, vaultPath },
+        400,
+      );
     }
 
     const relativePath = normalize(outputPath);
     const absolutePath = resolve(vaultPath, relativePath);
-    ensurePathWithinRoot(vaultPath, absolutePath);
+    ensurePathWithinRoot(
+      vaultPath,
+      absolutePath,
+      'Export path must stay inside the requested vault.',
+      { outputPath, vaultPath },
+    );
     await mkdir(dirname(absolutePath), { recursive: true });
     await writeFile(absolutePath, content, 'utf8');
 
@@ -72,11 +94,22 @@ export const writeArtifact = async ({
     };
   }
 
-  const resolvedOutputPath = outputPath
-    ? isAbsolute(outputPath)
-      ? outputPath
-      : join(defaultLocalDir, outputPath)
-    : join(defaultLocalDir, fileName);
+  if (outputPath && isAbsolute(outputPath)) {
+    throw new AppError(
+      ErrorCode.InvalidArgument,
+      'Local export path must be relative to the export directory.',
+      { outputPath },
+      400,
+    );
+  }
+
+  const resolvedOutputPath = resolve(defaultLocalDir, outputPath ?? fileName);
+  ensurePathWithinRoot(
+    defaultLocalDir,
+    resolvedOutputPath,
+    'Local export path must stay inside the export directory.',
+    { outputPath },
+  );
 
   await mkdir(dirname(resolvedOutputPath), { recursive: true });
   await writeFile(resolvedOutputPath, content, 'utf8');
@@ -86,11 +119,16 @@ export const writeArtifact = async ({
   };
 };
 
-const ensurePathWithinRoot = (rootPath: string, targetPath: string): void => {
+const ensurePathWithinRoot = (
+  rootPath: string,
+  targetPath: string,
+  message: string,
+  details: Record<string, unknown>,
+): void => {
   const relativePath = relative(rootPath, targetPath);
 
   if (relativePath.startsWith('..')) {
-    throw new Error('Export path must stay inside the requested vault.');
+    throw new AppError(ErrorCode.InvalidArgument, message, details, 400);
   }
 };
 

@@ -1,12 +1,11 @@
 import type { ArticleVersion, WritingTask } from '@ptce/shared';
-import { ErrorCode, TaskStage } from '@ptce/shared';
+import { TaskStage } from '@ptce/shared';
 
 import { rewriteMarkdown } from '../generators/rewrite-generator.js';
 import type { MaterialRepository } from '../repository/material-repository.js';
-import type { StyleProfileRepository } from '../repository/style-profile-repository.js';
 import type { TaskRepository } from '../repository/task-repository.js';
 import type { VersionRepository } from '../repository/version-repository.js';
-import { AppError, ensureTaskExists, touchStage } from '../workflow/stage-guards.js';
+import { ensureTaskExists, touchStage } from '../workflow/stage-guards.js';
 import type { DraftService, VersionResult } from './draft-service.js';
 
 export class RewriteService {
@@ -22,16 +21,7 @@ export class RewriteService {
     input: { versionId: string; instruction: string },
   ): Promise<VersionResult> {
     const task = ensureTaskExists(await this.taskRepository.get(taskId), taskId);
-    const version = await this.versionRepository.get(input.versionId);
-
-    if (!version || version.taskId !== taskId) {
-      throw new AppError(
-        ErrorCode.VersionNotFound,
-        'Version not found',
-        { taskId, versionId: input.versionId },
-        404,
-      );
-    }
+    const version = await this.draftService.getVersion(taskId, input.versionId);
 
     const styleProfile = await this.draftService.getOrCreateStyleProfile(
       taskId,

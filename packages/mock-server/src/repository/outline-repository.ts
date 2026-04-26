@@ -40,6 +40,13 @@ export class OutlineRepository {
     return outlines.filter((outline) => outline.taskId === taskId).at(-1);
   }
 
+  async getLatestConfirmedByTask(taskId: string): Promise<ArticleOutline | undefined> {
+    const outlines = await this.store.readAll();
+    return outlines
+      .filter((outline) => outline.taskId === taskId && outline.confirmed)
+      .at(-1);
+  }
+
   async save(outline: ArticleOutline): Promise<ArticleOutline> {
     const outlines = await this.store.readAll();
     const index = outlines.findIndex((currentOutline) => currentOutline.id === outline.id);

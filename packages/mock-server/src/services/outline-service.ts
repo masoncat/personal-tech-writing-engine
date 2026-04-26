@@ -65,7 +65,7 @@ export class OutlineService {
   }
 
   async getLatestConfirmed(taskId: string): Promise<ArticleOutline> {
-    const outline = await this.outlineRepository.getLatestByTask(taskId);
+    const outline = await this.outlineRepository.getLatestConfirmedByTask(taskId);
 
     if (!outline?.confirmed) {
       throw new AppError(

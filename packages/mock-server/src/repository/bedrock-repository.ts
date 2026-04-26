@@ -46,6 +46,13 @@ export class BedrockRepository {
     return bedrocks.filter((bedrock) => bedrock.taskId === taskId).at(-1);
   }
 
+  async getLatestConfirmedByTask(taskId: string): Promise<InformationBedrock | undefined> {
+    const bedrocks = await this.store.readAll();
+    return bedrocks
+      .filter((bedrock) => bedrock.taskId === taskId && bedrock.confirmed)
+      .at(-1);
+  }
+
   async save(bedrock: InformationBedrock): Promise<InformationBedrock> {
     const bedrocks = await this.store.readAll();
     const index = bedrocks.findIndex((currentBedrock) => currentBedrock.id === bedrock.id);

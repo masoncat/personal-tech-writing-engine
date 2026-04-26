@@ -1,4 +1,5 @@
 import type { ArticleVersion, Material, StyleProfile, WritingTask } from '@ptce/shared';
+import { ErrorCode } from '@ptce/shared';
 
 import { generateDraftMarkdown } from '../generators/draft-generator.js';
 import { generateStyleProfile } from '../generators/style-generator.js';
@@ -6,7 +7,7 @@ import type { MaterialRepository } from '../repository/material-repository.js';
 import type { StyleProfileRepository } from '../repository/style-profile-repository.js';
 import type { TaskRepository } from '../repository/task-repository.js';
 import type { VersionRepository } from '../repository/version-repository.js';
-import { ensureTaskExists } from '../workflow/stage-guards.js';
+import { AppError, ensureTaskExists } from '../workflow/stage-guards.js';
 import type { BedrockService } from './bedrock-service.js';
 import type { OutlineService } from './outline-service.js';
 
@@ -62,7 +63,12 @@ export class DraftService {
     const version = await this.versionRepository.get(versionId);
 
     if (!version || version.taskId !== taskId) {
-      throw new Error(`Version ${versionId} not found for task ${taskId}`);
+      throw new AppError(
+        ErrorCode.VersionNotFound,
+        'Version not found',
+        { taskId, versionId },
+        404,
+      );
     }
 
     return version;

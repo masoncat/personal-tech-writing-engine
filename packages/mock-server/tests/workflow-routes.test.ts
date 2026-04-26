@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 import {
+  ErrorCode,
   TaskStage,
   type BedrockResponse,
   type ExportResponse,
@@ -208,6 +209,219 @@ describe('workflow routes', () => {
       );
       expect(exportedMarkdown).toContain('channel: blog');
       expect(exportedMarkdown).toContain('Revision instruction');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('uses the latest confirmed bedrock and outline when newer drafts exist', async () => {
+    const dataDir = await createTempDir('ptce-mock-server-');
+    const vaultDir = await createTempDir('ptce-vault-');
+    const fixtureVaultDir = resolve(testDir, '../../../fixtures/obsidian-vault');
+
+    await cp(fixtureVaultDir, vaultDir, { recursive: true });
+
+    const app = buildApp({ dataDir });
+
+    try {
+      const createTaskResponse = await app.inject({
+        method: 'POST',
+        url: '/tasks',
+        payload: {
+          title: 'Fiber Confirmed Loop',
+          articleType: 'deep-dive',
+          reader: 'frontend platform engineers',
+        },
+      });
+      const task = createTaskResponse.json<TaskEnvelope>().task;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/materials/import-obsidian`,
+        payload: {
+          vaultPath: vaultDir,
+          path: vaultDir,
+        },
+      });
+
+      const firstBedrockResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/generate`,
+      });
+      const firstBedrock = firstBedrockResponse.json<BedrockResponse>().bedrock;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/${firstBedrock.id}/confirm`,
+      });
+
+      const secondBedrockResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/generate`,
+      });
+      const secondBedrock = secondBedrockResponse.json<BedrockResponse>().bedrock;
+      expect(secondBedrock.confirmed).toBe(false);
+
+      const outlineFromConfirmedBedrockResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/outlines/generate`,
+      });
+
+      expect(outlineFromConfirmedBedrockResponse.statusCode).toBe(201);
+      const firstOutline = outlineFromConfirmedBedrockResponse.json<OutlineResponse>().outline;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/outlines/${firstOutline.id}/confirm`,
+      });
+
+      const secondOutlineResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/outlines/generate`,
+      });
+      const secondOutline = secondOutlineResponse.json<OutlineResponse>().outline;
+      expect(secondOutline.confirmed).toBe(false);
+
+      const draftResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/drafts/generate`,
+      });
+
+      expect(draftResponse.statusCode).toBe(201);
+      const draftBody = draftResponse.json();
+      expect(draftBody.version.basedOnBedrockId).toBe(firstBedrock.id);
+      expect(draftBody.version.basedOnBedrockId).not.toBe(secondBedrock.id);
+      expect(draftBody.version.basedOnOutlineId).toBe(firstOutline.id);
+      expect(draftBody.version.basedOnOutlineId).not.toBe(secondOutline.id);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('returns structured invalid-argument errors for export path escapes and missing versions', async () => {
+    const dataDir = await createTempDir('ptce-mock-server-');
+    const vaultDir = await createTempDir('ptce-vault-');
+    const exportVaultDir = await createTempDir('ptce-export-vault-');
+    const fixtureVaultDir = resolve(testDir, '../../../fixtures/obsidian-vault');
+
+    await cp(fixtureVaultDir, vaultDir, { recursive: true });
+
+    const app = buildApp({ dataDir });
+
+    try {
+      const createTaskResponse = await app.inject({
+        method: 'POST',
+        url: '/tasks',
+        payload: {
+          title: 'Export Guard Rails',
+          articleType: 'deep-dive',
+          reader: 'frontend platform engineers',
+        },
+      });
+      const task = createTaskResponse.json<TaskEnvelope>().task;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/materials/import-obsidian`,
+        payload: {
+          vaultPath: vaultDir,
+          path: vaultDir,
+        },
+      });
+
+      const bedrock = (
+        await app.inject({
+          method: 'POST',
+          url: `/tasks/${task.id}/bedrock/generate`,
+        })
+      ).json<BedrockResponse>().bedrock;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/${bedrock.id}/confirm`,
+      });
+
+      const outline = (
+        await app.inject({
+          method: 'POST',
+          url: `/tasks/${task.id}/outlines/generate`,
+        })
+      ).json<OutlineResponse>().outline;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/outlines/${outline.id}/confirm`,
+      });
+
+      const draftVersion = (
+        await app.inject({
+          method: 'POST',
+          url: `/tasks/${task.id}/drafts/generate`,
+        })
+      ).json().version;
+
+      const vaultEscapeResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/exports`,
+        payload: {
+          versionId: draftVersion.id,
+          channel: 'blog',
+          format: 'markdown',
+          target: 'obsidian',
+          vaultPath: exportVaultDir,
+          outputPath: '../escape.md',
+        },
+      });
+
+      expect(vaultEscapeResponse.statusCode).toBe(400);
+      expect(vaultEscapeResponse.json()).toEqual({
+        code: ErrorCode.InvalidArgument,
+        message: 'Export path must stay inside the requested vault.',
+        details: {
+          outputPath: '../escape.md',
+          vaultPath: exportVaultDir,
+        },
+      });
+
+      const localEscapeResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/exports`,
+        payload: {
+          versionId: draftVersion.id,
+          channel: 'blog',
+          format: 'markdown',
+          target: 'local',
+          outputPath: '../escape.md',
+        },
+      });
+
+      expect(localEscapeResponse.statusCode).toBe(400);
+      expect(localEscapeResponse.json()).toEqual({
+        code: ErrorCode.InvalidArgument,
+        message: 'Local export path must stay inside the export directory.',
+        details: {
+          outputPath: '../escape.md',
+        },
+      });
+
+      const missingVersionRewriteResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/rewrites`,
+        payload: {
+          versionId: 'version-missing',
+          instruction: 'Make the close shorter.',
+        },
+      });
+
+      expect(missingVersionRewriteResponse.statusCode).toBe(404);
+      expect(missingVersionRewriteResponse.json()).toEqual({
+        code: ErrorCode.VersionNotFound,
+        message: 'Version not found',
+        details: {
+          taskId: task.id,
+          versionId: 'version-missing',
+        },
+      });
     } finally {
       await app.close();
     }
