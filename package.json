@@ -3,11 +3,13 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "tests/*"
   ],
   "scripts": {
     "test": "vitest",
     "test:watch": "vitest",
+    "verify": "vitest --run && npm run test --workspace @ptce/e2e",
     "dev:server": "npm run dev --workspace @ptce/mock-server",
     "dev:cli": "npm run dev --workspace @ptce/cli"
   },
