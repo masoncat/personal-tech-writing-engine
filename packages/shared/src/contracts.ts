@@ -38,17 +38,32 @@ export interface GenerateRewriteRequest {
   instruction: string;
 }
 
-export interface GenerateExportRequest {
+interface GenerateExportRequestBase {
   versionId: string;
   channel: ExportChannel;
   format: ExportFormat;
-  target?: ExportTarget;
-  vaultPath?: string;
-  outputPath?: string;
 }
+
+interface LocalExportRequest extends GenerateExportRequestBase {
+  target?: Extract<ExportTarget, 'local'>;
+  outputPath?: string;
+  vaultPath?: never;
+}
+
+interface ObsidianExportRequest extends GenerateExportRequestBase {
+  target: Extract<ExportTarget, 'obsidian'>;
+  vaultPath: string;
+  outputPath: string;
+}
+
+export type GenerateExportRequest = LocalExportRequest | ObsidianExportRequest;
 
 export interface TaskEnvelope {
   task: WritingTask;
+}
+
+export interface VersionResponse extends TaskEnvelope {
+  version: ArticleVersion;
 }
 
 export interface MaterialListResponse extends TaskEnvelope {
