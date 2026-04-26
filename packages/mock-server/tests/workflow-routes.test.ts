@@ -1,6 +1,7 @@
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 import {
   TaskStage,
@@ -16,6 +17,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 
 const tempDirs: string[] = [];
+const testDir = dirname(fileURLToPath(import.meta.url));
 
 const createTempDir = async (prefix: string) => {
   const dir = await mkdtemp(join(tmpdir(), prefix));
@@ -32,7 +34,7 @@ describe('workflow routes', () => {
     const dataDir = await createTempDir('ptce-mock-server-');
     const vaultDir = await createTempDir('ptce-vault-');
     const exportVaultDir = await createTempDir('ptce-export-vault-');
-    const fixtureVaultDir = resolve(process.cwd(), '../../fixtures/obsidian-vault');
+    const fixtureVaultDir = resolve(testDir, '../../../fixtures/obsidian-vault');
 
     await cp(fixtureVaultDir, vaultDir, { recursive: true });
 
