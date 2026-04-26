@@ -5,7 +5,7 @@ import {
   ErrorCode,
   type AddMaterialRequest,
   type MaterialListResponse,
-} from '../../../shared/src/index.js';
+} from '@ptce/shared';
 
 import type { MaterialService } from '../services/material-service.js';
 import { AppError } from '../workflow/stage-guards.js';

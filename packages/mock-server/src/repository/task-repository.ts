@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
-import type { CreateTaskRequest, WritingTask } from '../../../shared/src/index.js';
-import { TaskStage } from '../../../shared/src/index.js';
+import type { CreateTaskRequest, WritingTask } from '@ptce/shared';
+import { TaskStage } from '@ptce/shared';
 
 import type { FileStore } from './file-store.js';
 

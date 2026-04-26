@@ -1,5 +1,5 @@
-import type { AddMaterialRequest, Material, WritingTask } from '../../../shared/src/index.js';
-import { TaskStage } from '../../../shared/src/index.js';
+import type { AddMaterialRequest, Material, WritingTask } from '@ptce/shared';
+import { TaskStage } from '@ptce/shared';
 
 import type { MaterialRepository } from '../repository/material-repository.js';
 import type { TaskRepository } from '../repository/task-repository.js';

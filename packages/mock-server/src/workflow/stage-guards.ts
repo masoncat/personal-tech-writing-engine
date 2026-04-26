@@ -1,5 +1,5 @@
-import type { AppErrorShape, WritingTask } from '../../../shared/src/index.js';
-import { ErrorCode } from '../../../shared/src/index.js';
+import type { AppErrorShape, WritingTask } from '@ptce/shared';
+import { ErrorCode } from '@ptce/shared';
 
 export class AppError extends Error implements AppErrorShape {
   constructor(

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { ErrorCode, type CreateTaskRequest, type TaskEnvelope } from '../../../shared/src/index.js';
+import { ErrorCode, type CreateTaskRequest, type TaskEnvelope } from '@ptce/shared';
 
 import type { TaskService } from '../services/task-service.js';
 import { AppError } from '../workflow/stage-guards.js';

@@ -1,4 +1,4 @@
-import type { CreateTaskRequest, WritingTask } from '../../../shared/src/index.js';
+import type { CreateTaskRequest, WritingTask } from '@ptce/shared';
 
 import type { TaskRepository } from '../repository/task-repository.js';
 import { ensureTaskExists } from '../workflow/stage-guards.js';

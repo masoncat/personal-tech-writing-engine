@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import type { AddMaterialRequest, Material } from '../../../shared/src/index.js';
+import type { AddMaterialRequest, Material } from '@ptce/shared';
 
 import type { FileStore } from './file-store.js';
 

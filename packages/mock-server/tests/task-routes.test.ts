@@ -2,10 +2,10 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
+import { ErrorCode, TaskStage, type TaskEnvelope } from '@ptce/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildApp } from '../src/app.js';
-import { ErrorCode, TaskStage, type TaskEnvelope } from '../../shared/src/index.js';
 
 const tempDirs: string[] = [];
 
