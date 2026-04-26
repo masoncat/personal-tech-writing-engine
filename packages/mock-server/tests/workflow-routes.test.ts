@@ -298,6 +298,94 @@ describe('workflow routes', () => {
     }
   });
 
+  it('uses the most recently confirmed choice even when an older candidate is confirmed last', async () => {
+    const dataDir = await createTempDir('ptce-mock-server-');
+    const vaultDir = await createTempDir('ptce-vault-');
+    const fixtureVaultDir = resolve(testDir, '../../../fixtures/obsidian-vault');
+
+    await cp(fixtureVaultDir, vaultDir, { recursive: true });
+
+    const app = buildApp({ dataDir });
+
+    try {
+      const createTaskResponse = await app.inject({
+        method: 'POST',
+        url: '/tasks',
+        payload: {
+          title: 'Fiber Confirmation Order',
+          articleType: 'deep-dive',
+          reader: 'frontend platform engineers',
+        },
+      });
+      const task = createTaskResponse.json<TaskEnvelope>().task;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/materials/import-obsidian`,
+        payload: {
+          vaultPath: vaultDir,
+          path: vaultDir,
+        },
+      });
+
+      const firstBedrock = (
+        await app.inject({
+          method: 'POST',
+          url: `/tasks/${task.id}/bedrock/generate`,
+        })
+      ).json<BedrockResponse>().bedrock;
+      const secondBedrock = (
+        await app.inject({
+          method: 'POST',
+          url: `/tasks/${task.id}/bedrock/generate`,
+        })
+      ).json<BedrockResponse>().bedrock;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/${secondBedrock.id}/confirm`,
+      });
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/${firstBedrock.id}/confirm`,
+      });
+
+      const firstOutline = (
+        await app.inject({
+          method: 'POST',
+          url: `/tasks/${task.id}/outlines/generate`,
+        })
+      ).json<OutlineResponse>().outline;
+      const secondOutline = (
+        await app.inject({
+          method: 'POST',
+          url: `/tasks/${task.id}/outlines/generate`,
+        })
+      ).json<OutlineResponse>().outline;
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/outlines/${secondOutline.id}/confirm`,
+      });
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/outlines/${firstOutline.id}/confirm`,
+      });
+
+      const draftResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/drafts/generate`,
+      });
+
+      expect(draftResponse.statusCode).toBe(201);
+      const draftBody = draftResponse.json();
+      expect(draftBody.version.basedOnBedrockId).toBe(firstBedrock.id);
+      expect(draftBody.version.basedOnOutlineId).toBe(firstOutline.id);
+    } finally {
+      await app.close();
+    }
+  });
+
   it('returns structured invalid-argument errors for export path escapes and missing versions', async () => {
     const dataDir = await createTempDir('ptce-mock-server-');
     const vaultDir = await createTempDir('ptce-vault-');

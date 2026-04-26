@@ -37,11 +37,13 @@ export class OutlineService {
 
   async confirm(taskId: string, outlineId: string): Promise<OutlineResult> {
     const task = ensureTaskExists(await this.taskRepository.get(taskId), taskId);
-    const outline = await this.requireOutline(taskId, outlineId);
-    const confirmedOutline = await this.outlineRepository.save({
-      ...outline,
-      confirmed: true,
-    });
+    await this.requireOutline(taskId, outlineId);
+    const confirmedOutline = await this.outlineRepository.confirm(outlineId);
+
+    if (!confirmedOutline) {
+      throw new AppError(ErrorCode.InvalidArgument, 'Outline not found', { taskId, outlineId }, 404);
+    }
+
     const nextTask = await this.taskRepository.save(touchStage(task, TaskStage.DraftReady));
 
     return {

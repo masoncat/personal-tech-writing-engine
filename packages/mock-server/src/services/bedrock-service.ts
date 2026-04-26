@@ -47,11 +47,13 @@ export class BedrockService {
 
   async confirm(taskId: string, bedrockId: string): Promise<BedrockResult> {
     const task = ensureTaskExists(await this.taskRepository.get(taskId), taskId);
-    const bedrock = await this.requireBedrock(taskId, bedrockId);
-    const confirmedBedrock = await this.bedrockRepository.save({
-      ...bedrock,
-      confirmed: true,
-    });
+    await this.requireBedrock(taskId, bedrockId);
+    const confirmedBedrock = await this.bedrockRepository.confirm(bedrockId);
+
+    if (!confirmedBedrock) {
+      throw new AppError(ErrorCode.InvalidArgument, 'Bedrock not found', { taskId, bedrockId }, 404);
+    }
+
     const nextTask = await this.taskRepository.save(touchStage(task, TaskStage.OutlineReview));
 
     return {
