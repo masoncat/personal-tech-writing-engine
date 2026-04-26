@@ -278,6 +278,72 @@ describe('material service consistency', () => {
     expect(materials).toHaveLength(2);
     expect(taskRepository.save).toHaveBeenCalledTimes(1);
   });
+
+  it('waits for an in-flight addMaterial mutation before listing materials', async () => {
+    const task = createTaskFixture();
+    const materials: Material[] = [];
+    let currentTask = task;
+    let releaseTaskSave!: () => void;
+    const taskSaveGate = new Promise<void>((resolve) => {
+      releaseTaskSave = resolve;
+    });
+
+    const taskRepository = {
+      get: vi.fn(async () => currentTask),
+      save: vi.fn(async (nextTask: WritingTask) => {
+        await taskSaveGate;
+        currentTask = nextTask;
+        return nextTask;
+      }),
+    } as unknown as TaskRepository;
+
+    const materialRepository = {
+      add: vi.fn(async (input) => {
+        const material = createMaterialFixture(input);
+        materials.push(material);
+        return material;
+      }),
+      remove: vi.fn(async (materialId: string) => {
+        const index = materials.findIndex((material) => material.id === materialId);
+
+        if (index !== -1) {
+          materials.splice(index, 1);
+        }
+      }),
+      listByTask: vi.fn(async (taskId: string) =>
+        materials.filter((material) => material.taskId === taskId),
+      ),
+    } as unknown as MaterialRepository;
+
+    const service = new MaterialService(taskRepository, materialRepository);
+
+    const addMaterialPromise = service.addMaterial(task.id, {
+      type: 'note',
+      title: 'Queued add',
+      source: 'inline',
+      content: 'Queued add',
+    });
+
+    await flushMicrotasks();
+
+    let listResolved = false;
+    const listPromise = service.listMaterials(task.id).then((result) => {
+      listResolved = true;
+      return result;
+    });
+
+    await flushMicrotasks();
+
+    expect(listResolved).toBe(false);
+
+    releaseTaskSave();
+
+    const [, listResult] = await Promise.all([addMaterialPromise, listPromise]);
+
+    expect(listResolved).toBe(true);
+    expect(listResult.task.stage).toBe(TaskStage.CollectingMaterials);
+    expect(listResult.materials).toHaveLength(1);
+  });
 });
 
 const createTaskFixture = (): WritingTask => ({

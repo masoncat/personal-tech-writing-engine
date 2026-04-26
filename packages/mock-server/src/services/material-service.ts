@@ -44,6 +44,8 @@ export class MaterialService {
   }
 
   async listMaterials(taskId: string): Promise<MaterialListResult> {
+    await this.mutationQueue;
+
     const task = ensureTaskExists(await this.taskRepository.get(taskId), taskId);
 
     return {
