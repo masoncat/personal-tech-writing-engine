@@ -3,3 +3,4 @@ dist
 .ptce-data/*
 !.ptce-data/.gitkeep
 coverage
+.worktrees
