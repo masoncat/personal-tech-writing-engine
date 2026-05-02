@@ -13,18 +13,28 @@ import { registerMaterialCommands } from './commands/material.js';
 import { registerOutlineCommands } from './commands/outline.js';
 import { registerRewriteCommands } from './commands/rewrite.js';
 import { registerTaskCommands } from './commands/task.js';
+import {
+  registerWriteCommands,
+  type ProjectWriteRunnerLike,
+} from './commands/write.js';
 import type { Writer } from './output/renderers.js';
+import { createProjectWriteRunner } from './write/workflow-runner.js';
 
 export type { ApiClientLike } from './client/api-client.js';
 
 export interface BuildProgramDependencies {
   createApiClient?: (options: { baseUrl: string }) => ApiClientLike;
+  createWriteProjectRunner?: (options: {
+    baseUrl: string;
+    createApiClient: (options: { baseUrl: string }) => ApiClientLike;
+  }) => ProjectWriteRunnerLike;
   stdout?: Writer;
   stderr?: Writer;
 }
 
 export const buildProgram = ({
   createApiClient = defaultCreateApiClient,
+  createWriteProjectRunner = createProjectWriteRunner,
   stdout = process.stdout,
   stderr = process.stderr,
 }: BuildProgramDependencies = {}): Command => {
@@ -45,6 +55,11 @@ export const buildProgram = ({
   registerDraftCommands(program, commandDependencies);
   registerRewriteCommands(program, commandDependencies);
   registerExportCommands(program, commandDependencies);
+  registerWriteCommands(program, {
+    createApiClient,
+    createWriteProjectRunner,
+    stdout,
+  });
 
   program.configureOutput({
     writeErr: (value) => {
@@ -95,7 +110,6 @@ const formatApiClientError = (error: ApiClientError): string => {
 
   return `${error.message} (status ${error.status})\n`;
 };
-
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   void runCli();
 }

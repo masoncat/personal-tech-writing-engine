@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 
-import type { CreateTaskRequest, TaskEnvelope } from '@ptce/shared';
+import type { CreateTaskRequest, ExportChannel, TaskEnvelope } from '@ptce/shared';
 
 import { DEFAULT_BASE_URL, type ApiClientLike } from '../client/api-client.js';
 import {
@@ -24,6 +24,7 @@ interface CommonOptions {
 interface CreateTaskOptions extends CommonOptions {
   title: string;
   articleType: string;
+  preferredChannel: ExportChannel;
   reader: string;
 }
 
@@ -39,6 +40,12 @@ export const registerTaskCommands = (
       .description('Create a new writing task')
       .requiredOption('--title <title>', 'Task title')
       .requiredOption('--article-type <articleType>', 'Article type')
+      .option(
+        '--preferred-channel <channel>',
+        'Preferred export channel',
+        createChoiceParser(['blog', 'wechat'] as const, '--preferred-channel'),
+        'blog',
+      )
       .requiredOption('--reader <reader>', 'Target reader')
       .action(async (options: CreateTaskOptions) => {
         const client = createApiClient({ baseUrl: options.baseUrl });
@@ -48,6 +55,7 @@ export const registerTaskCommands = (
           body: {
             title: options.title,
             articleType: options.articleType,
+            preferredChannel: options.preferredChannel,
             reader: options.reader,
           } satisfies CreateTaskRequest,
         });

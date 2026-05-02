@@ -15,6 +15,7 @@ export class TaskRepository {
       id: `task-${randomUUID()}`,
       title: input.title,
       articleType: input.articleType,
+      preferredChannel: input.preferredChannel ?? 'blog',
       reader: input.reader,
       stage: TaskStage.Created,
       createdAt: now,
@@ -29,20 +30,27 @@ export class TaskRepository {
 
   async get(taskId: string): Promise<WritingTask | undefined> {
     const tasks = await this.store.readAll();
-    return tasks.find((task) => task.id === taskId);
+    const task = tasks.find((currentTask) => currentTask.id === taskId);
+    return task ? normalizeTask(task) : undefined;
   }
 
   async save(task: WritingTask): Promise<WritingTask> {
     const tasks = await this.store.readAll();
     const index = tasks.findIndex((currentTask) => currentTask.id === task.id);
+    const normalizedTask = normalizeTask(task);
 
     if (index === -1) {
-      tasks.push(task);
+      tasks.push(normalizedTask);
     } else {
-      tasks[index] = task;
+      tasks[index] = normalizedTask;
     }
 
     await this.store.writeAll(tasks);
-    return task;
+    return normalizedTask;
   }
 }
+
+const normalizeTask = (task: WritingTask): WritingTask => ({
+  ...task,
+  preferredChannel: task.preferredChannel ?? 'blog',
+});

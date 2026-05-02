@@ -214,6 +214,218 @@ describe('workflow routes', () => {
     }
   });
 
+  it('runs the build-retrospective blog lane through draft, rewrite, and export', async () => {
+    const dataDir = await createTempDir('ptce-mock-server-');
+    const exportVaultDir = await createTempDir('ptce-export-vault-');
+    const app = buildApp({ dataDir });
+
+    try {
+      const createTaskResponse = await app.inject({
+        method: 'POST',
+        url: '/tasks',
+        payload: {
+          title: 'AI Homework Review 的 vibecoding 实践分享',
+          articleType: 'build-retrospective',
+          preferredChannel: 'blog',
+          reader: '对 agent 感兴趣但还没真正上手的开发者',
+        },
+      });
+
+      expect(createTaskResponse.statusCode).toBe(201);
+      const task = createTaskResponse.json<TaskEnvelope>().task;
+
+      const inlineMaterials = [
+        {
+          type: 'prompt',
+          title: '写作任务说明',
+          content: '文章主轴是第一人称，按时间线讲我是怎么用 AI/agent 把这个项目做出来的。',
+        },
+        {
+          type: 'article',
+          title: '从假演示到真实可用',
+          content: '做 AI 产品最容易踩的一个坑，不是模型效果不够好，而是看起来像通了，其实没通。',
+        },
+        {
+          type: 'note',
+          title: '最近项目演进时间线',
+          content: '1638f56 feat: build offline batch review task center\n3c11695 fix: attach fc mysql access to vpc',
+        },
+      ] as const;
+
+      for (const material of inlineMaterials) {
+        const addMaterialResponse = await app.inject({
+          method: 'POST',
+          url: `/tasks/${task.id}/materials`,
+          payload: {
+            source: 'inline',
+            type: material.type,
+            title: material.title,
+            content: material.content,
+          },
+        });
+
+        expect(addMaterialResponse.statusCode).toBe(201);
+      }
+
+      const bedrockGenerateResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/generate`,
+      });
+
+      expect(bedrockGenerateResponse.statusCode).toBe(201);
+      const generatedBedrock = bedrockGenerateResponse.json<BedrockResponse>();
+      expect(generatedBedrock.task.stage).toBe(TaskStage.BedrockReview);
+      expect(generatedBedrock.bedrock.confirmed).toBe(false);
+      expect(generatedBedrock.bedrock.coreQuestion).toContain('看起来像通了');
+      expect(generatedBedrock.bedrock.arguments.join('\n')).toContain('offline batch review task center');
+
+      const bedrockConfirmResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/${generatedBedrock.bedrock.id}/confirm`,
+      });
+
+      expect(bedrockConfirmResponse.statusCode).toBe(200);
+      const confirmedBedrock = bedrockConfirmResponse.json<BedrockResponse>();
+      expect(confirmedBedrock.bedrock.confirmed).toBe(true);
+
+      const outlineGenerateResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/outlines/generate`,
+      });
+
+      expect(outlineGenerateResponse.statusCode).toBe(201);
+      const generatedOutline = outlineGenerateResponse.json<OutlineResponse>();
+      expect(generatedOutline.outline.confirmed).toBe(false);
+      expect(generatedOutline.outline.sections.map((section) => section.title)).toEqual([
+        '开场问题',
+        '项目起步',
+        '真实链路打通',
+        '项目复杂化',
+        '工程收口',
+        '最后的判断',
+      ]);
+
+      const outlineConfirmResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/outlines/${generatedOutline.outline.id}/confirm`,
+      });
+
+      expect(outlineConfirmResponse.statusCode).toBe(200);
+
+      const draftGenerateResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/drafts/generate`,
+      });
+
+      expect(draftGenerateResponse.statusCode).toBe(201);
+      const draftVersion = draftGenerateResponse.json();
+      expect(draftVersion.task.stage).toBe(TaskStage.DraftReady);
+      expect(draftVersion.version.versionType).toBe('draft');
+      expect(draftVersion.version.content).toContain('## 项目起步');
+      expect(draftVersion.version.content).toContain('## 工程收口');
+      expect(draftVersion.version.content).not.toContain('Reader:');
+      expect(draftVersion.version.content).not.toContain('Core question:');
+      expect(draftVersion.version.content).not.toContain('Evidence anchors:');
+      expect(draftVersion.version.content.length).toBeGreaterThan(1200);
+      expect(draftVersion.version.content.length).toBeLessThan(1900);
+
+      const rewriteResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/rewrites`,
+        payload: {
+          versionId: draftVersion.version.id,
+          instruction: '更像第一人称复盘，保持 blog 语气并强调 agent 的作用和边界。',
+        },
+      });
+
+      expect(rewriteResponse.statusCode).toBe(201);
+      const rewriteBody = rewriteResponse.json();
+      expect(rewriteBody.task.stage).toBe(TaskStage.Rewriting);
+      expect(rewriteBody.version.versionType).toBe('rewrite');
+      expect(rewriteBody.version.content).toContain('我重新看了一遍这版稿子');
+      expect(rewriteBody.version.content).toContain('agent 的价值在于帮我更快走到判断点');
+      expect(rewriteBody.version.content).not.toContain('## Revision instruction');
+      expect(rewriteBody.version.content).not.toContain('## Style cues applied');
+      expect(rewriteBody.version.content).not.toContain('## Editorial note');
+
+      const exportResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/exports`,
+        payload: {
+          versionId: rewriteBody.version.id,
+          channel: 'blog',
+          format: 'markdown',
+          target: 'obsidian',
+          vaultPath: exportVaultDir,
+          outputPath: 'exports/ai-homework-review.md',
+        },
+      });
+
+      expect(exportResponse.statusCode).toBe(201);
+      const exportBody = exportResponse.json<ExportResponse>();
+      expect(exportBody.task.stage).toBe(TaskStage.Exported);
+
+      const exportedMarkdown = await readFile(
+        join(exportVaultDir, 'exports/ai-homework-review.md'),
+        'utf8',
+      );
+      expect(exportedMarkdown).toContain('## 项目起步');
+      expect(exportedMarkdown).toContain('## 最后的判断');
+      expect(exportedMarkdown).toContain('agent 的价值在于帮我更快走到判断点');
+      expect(exportedMarkdown).not.toContain('Reader:');
+      expect(exportedMarkdown).not.toContain('## Revision instruction');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('keeps build-retrospective tasks on the generic bedrock path when preferredChannel is wechat', async () => {
+    const dataDir = await createTempDir('ptce-mock-server-');
+    const vaultDir = await createTempDir('ptce-vault-');
+    const fixtureVaultDir = resolve(testDir, '../../../fixtures/obsidian-vault');
+
+    await cp(fixtureVaultDir, vaultDir, { recursive: true });
+
+    const app = buildApp({ dataDir });
+
+    try {
+      const createTaskResponse = await app.inject({
+        method: 'POST',
+        url: '/tasks',
+        payload: {
+          title: 'Retrospective WeChat Lane',
+          articleType: 'build-retrospective',
+          preferredChannel: 'wechat',
+          reader: 'agent curious developers',
+        },
+      });
+      const task = createTaskResponse.json<TaskEnvelope>().task;
+      expect(task.preferredChannel).toBe('wechat');
+
+      await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/materials/import-obsidian`,
+        payload: {
+          vaultPath: vaultDir,
+          path: vaultDir,
+        },
+      });
+
+      const bedrockResponse = await app.inject({
+        method: 'POST',
+        url: `/tasks/${task.id}/bedrock/generate`,
+      });
+
+      expect(bedrockResponse.statusCode).toBe(201);
+      const bedrockBody = bedrockResponse.json<BedrockResponse>();
+      expect(bedrockBody.task.preferredChannel).toBe('wechat');
+      expect(bedrockBody.bedrock.coreQuestion).toContain('How should');
+      expect(bedrockBody.bedrock.arguments[0]).toContain('Fiber note');
+    } finally {
+      await app.close();
+    }
+  });
+
   it('uses the latest confirmed bedrock and outline when newer drafts exist', async () => {
     const dataDir = await createTempDir('ptce-mock-server-');
     const vaultDir = await createTempDir('ptce-vault-');

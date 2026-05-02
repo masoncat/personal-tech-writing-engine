@@ -14,6 +14,7 @@ import type {
 export interface CreateTaskRequest {
   title: string;
   articleType: string;
+  preferredChannel?: ExportChannel;
   reader: string;
 }
 

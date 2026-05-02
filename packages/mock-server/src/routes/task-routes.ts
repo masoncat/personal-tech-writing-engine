@@ -9,6 +9,7 @@ import { AppError } from '../workflow/stage-guards.js';
 const createTaskSchema = z.object({
   title: z.string().trim().min(1),
   articleType: z.string().trim().min(1),
+  preferredChannel: z.enum(['blog', 'wechat']).default('blog'),
   reader: z.string().trim().min(1),
 });
 

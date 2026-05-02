@@ -49,7 +49,9 @@ This is explicitly **not** a goal to produce publish-ready writing in every case
 The behavior change applies only when both conditions hold:
 
 - `task.articleType === 'build-retrospective'`
-- export target content is intended for `channel=blog`
+- the task’s intended output channel is `blog`
+
+Because `bedrock`, `outline`, and `draft` are generated before the final export step, the workflow needs a task-level channel intent instead of waiting until `export run`. This design therefore treats `preferredChannel` as task metadata for lane selection, with `blog` as the default for current CLI-created tasks unless explicitly changed later.
 
 Other task types may continue using the current generic fallback behavior.
 
@@ -348,6 +350,11 @@ Expected touch points:
   - `rewrite-service.ts`
 
 Avoid broad repository or route changes.
+
+One narrow contract change is allowed and required for correct lane selection:
+
+- add `preferredChannel` to `WritingTask`
+- allow task creation to set or default this value
 
 ## Testing Strategy
 

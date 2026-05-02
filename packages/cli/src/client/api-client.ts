@@ -43,11 +43,14 @@ export class ApiClient implements ApiClientLike {
   }
 
   async request<T>({ method, path, body }: ApiRequestOptions): Promise<T> {
+    const headers = body === undefined
+      ? undefined
+      : {
+          'content-type': 'application/json',
+        };
     const response = await this.#fetchFn(new URL(path, this.#baseUrl), {
       method,
-      headers: {
-        'content-type': 'application/json',
-      },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const payload = await parseResponseBody(response);

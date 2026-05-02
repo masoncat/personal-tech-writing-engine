@@ -12,6 +12,7 @@ const sampleTask = {
   id: 'task-1',
   title: 'React Fiber scheduling',
   articleType: 'source-analysis',
+  preferredChannel: 'blog' as const,
   reader: 'frontend engineers',
   stage: TaskStage.DraftReady,
   createdAt: '2026-04-26T00:00:00.000Z',
@@ -67,11 +68,13 @@ describe('shared contracts', () => {
     const request: CreateTaskRequest = {
       title: 'React Fiber scheduling',
       articleType: 'source-analysis',
+      preferredChannel: 'wechat',
       reader: 'frontend engineers',
     };
 
     expect(request.title).toContain('Fiber');
     expect(request.articleType).toBe('source-analysis');
+    expect(request.preferredChannel).toBe('wechat');
     expect(request.reader).toBe('frontend engineers');
   });
 

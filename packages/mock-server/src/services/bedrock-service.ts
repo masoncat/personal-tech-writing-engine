@@ -1,4 +1,4 @@
-import type { InformationBedrock, Material, WritingTask } from '@ptce/shared';
+import type { InformationBedrock, WritingTask } from '@ptce/shared';
 import { ErrorCode, TaskStage } from '@ptce/shared';
 
 import { generateBedrock } from '../generators/bedrock-generator.js';
@@ -32,7 +32,7 @@ export class BedrockService {
       );
     }
 
-    const draft = generateBedrock(task, materials);
+    const draft = generateBedrock(task, materials, task.preferredChannel);
     const bedrock = await this.bedrockRepository.create({
       taskId,
       ...draft,

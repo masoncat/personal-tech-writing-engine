@@ -4,3 +4,4 @@ dist
 !.ptce-data/.gitkeep
 coverage
 .worktrees
+.DS_Store

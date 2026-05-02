@@ -26,6 +26,7 @@ export interface WritingTask {
   id: string;
   title: string;
   articleType: string;
+  preferredChannel: ExportChannel;
   reader: string;
   stage: TaskStage;
   createdAt: string;

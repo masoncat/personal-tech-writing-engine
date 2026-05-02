@@ -40,6 +40,8 @@ interface CommonOptions {
   render: OutputFormat;
 }
 
+const DEFAULT_OBSIDIAN_EXPORT_DIR = 'content-engine/articles';
+
 export const registerExportCommands = (
   program: Command,
   { createApiClient, stdout }: ExportCommandDependencies,
@@ -66,16 +68,16 @@ export const registerExportCommands = (
         '--target <target>',
         `Export target (${EXPORT_TARGETS.join(', ')})`,
         createChoiceParser(EXPORT_TARGETS, '--target'),
-        'local',
+        getDefaultExportTarget(),
       )
       .option('--output-path <path>', 'Relative or local output path')
-      .option('--vault-path <path>', 'Obsidian vault path')
+      .option('--vault-path <path>', 'Obsidian vault path', getDefaultObsidianVaultPath())
       .action(async (taskId: string, options: ExportOptions) => {
         const client = createApiClient({ baseUrl: options.baseUrl });
         const response = await client.request<ExportResponse>({
           method: 'POST',
           path: `/tasks/${taskId}/exports`,
-          body: buildExportRequest(options),
+          body: buildExportRequest(taskId, options),
         });
 
         writeRenderedOutput(stdout, response, options.render);
@@ -83,10 +85,12 @@ export const registerExportCommands = (
   );
 };
 
-const buildExportRequest = (options: ExportOptions): GenerateExportRequest => {
+const buildExportRequest = (taskId: string, options: ExportOptions): GenerateExportRequest => {
   if (options.target === 'obsidian') {
-    if (!options.vaultPath || !options.outputPath) {
-      throw new Error('--vault-path and --output-path are required when --target=obsidian');
+    if (!options.vaultPath) {
+      throw new Error(
+        '--vault-path is required when --target=obsidian unless PTCE_OBSIDIAN_VAULT_PATH is set',
+      );
     }
 
     return {
@@ -95,7 +99,7 @@ const buildExportRequest = (options: ExportOptions): GenerateExportRequest => {
       format: options.format,
       target: 'obsidian',
       vaultPath: options.vaultPath,
-      outputPath: options.outputPath,
+      outputPath: options.outputPath ?? createDefaultObsidianOutputPath(taskId, options.channel),
     };
   }
 
@@ -117,3 +121,16 @@ const withCommonOptions = <T extends Command>(command: T): T =>
       createChoiceParser(OUTPUT_FORMATS, '--render'),
       OUTPUT_FORMATS[1],
     );
+
+const getDefaultObsidianVaultPath = (): string | undefined => {
+  const value = process.env.PTCE_OBSIDIAN_VAULT_PATH?.trim();
+  return value && value.length > 0 ? value : undefined;
+};
+
+const getDefaultExportTarget = (): ExportTarget =>
+  getDefaultObsidianVaultPath() ? 'obsidian' : 'local';
+
+const createDefaultObsidianOutputPath = (
+  taskId: string,
+  channel: ExportChannel,
+): string => `${DEFAULT_OBSIDIAN_EXPORT_DIR}/${taskId}-${channel}.md`;

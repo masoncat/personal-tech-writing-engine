@@ -39,6 +39,7 @@ describe('task routes', () => {
       const createdBody = createResponse.json<TaskEnvelope>();
       expect(createdBody.task.title).toBe('React Server Components');
       expect(createdBody.task.articleType).toBe('deep-dive');
+      expect(createdBody.task.preferredChannel).toBe('blog');
       expect(createdBody.task.reader).toBe('frontend platform engineers');
       expect(createdBody.task.stage).toBe(TaskStage.Created);
       expect(createdBody.task.id).toMatch(/^task-/);
@@ -72,6 +73,56 @@ describe('task routes', () => {
         details: {
           taskId: 'task-missing',
         },
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('accepts an explicit preferred channel when creating a task', async () => {
+    const app = buildApp({ dataDir: await createTempDataDir() });
+
+    try {
+      const createResponse = await app.inject({
+        method: 'POST',
+        url: '/tasks',
+        payload: {
+          title: 'Build Retrospective',
+          articleType: 'build-retrospective',
+          preferredChannel: 'wechat',
+          reader: 'agent curious developers',
+        },
+      });
+
+      expect(createResponse.statusCode).toBe(201);
+
+      const createdBody = createResponse.json<TaskEnvelope>();
+      expect(createdBody.task.preferredChannel).toBe('wechat');
+      expect(createdBody.task.articleType).toBe('build-retrospective');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('rejects an invalid preferred channel when creating a task', async () => {
+    const app = buildApp({ dataDir: await createTempDataDir() });
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/tasks',
+        payload: {
+          title: 'Build Retrospective',
+          articleType: 'build-retrospective',
+          preferredChannel: 'newsletter',
+          reader: 'agent curious developers',
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toMatchObject({
+        code: ErrorCode.InvalidArgument,
+        message: 'Invalid request',
       });
     } finally {
       await app.close();

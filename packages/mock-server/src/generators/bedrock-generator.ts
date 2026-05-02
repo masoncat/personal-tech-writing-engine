@@ -1,4 +1,8 @@
 import type { InformationBedrock, Material, WritingTask } from '@ptce/shared';
+import type { ExportChannel } from '@ptce/shared';
+
+import { isBuildRetrospectiveBlogLane } from './article-lane.js';
+import { extractRetrospectiveBeat } from './build-retrospective.js';
 
 export interface BedrockDraft
   extends Omit<InformationBedrock, 'id' | 'taskId' | 'confirmed'> {}
@@ -6,11 +10,25 @@ export interface BedrockDraft
 export const generateBedrock = (
   task: WritingTask,
   materials: Material[],
+  channel: ExportChannel,
 ): BedrockDraft => {
+  if (isBuildRetrospectiveBlogLane(task, channel)) {
+    const beat = extractRetrospectiveBeat(materials);
+
+    return {
+      theme: task.title,
+      coreQuestion: beat.openingProblem,
+      arguments: [beat.projectGoal, ...beat.phaseHighlights, ...beat.judgementCalls, beat.closingTakeaway],
+      evidence: materials.map((material) =>
+        material.relativePath ? `${material.title} (${material.relativePath})` : material.title,
+      ),
+      uncertainties: [],
+    };
+  }
+
   const titledMaterials = materials.slice(0, 3);
-  const argumentsList =
-    titledMaterials.map((material) => summarizeMaterial(material)) ||
-    materials.map((material) => material.title);
+  const summarizedMaterials = titledMaterials.map((material) => summarizeMaterial(material));
+  const fallbackArguments = materials.map((material) => material.title);
   const evidence = materials.map((material) =>
     material.relativePath ? `${material.title} (${material.relativePath})` : material.title,
   );
@@ -23,9 +41,11 @@ export const generateBedrock = (
     theme: task.title,
     coreQuestion,
     arguments:
-      argumentsList.length > 0
-        ? argumentsList
-        : [`Explain why ${task.title} matters to ${task.reader}.`],
+      summarizedMaterials.length > 0
+        ? summarizedMaterials
+        : fallbackArguments.length > 0
+          ? fallbackArguments
+          : [`Explain why ${task.title} matters to ${task.reader}.`],
     evidence: evidence.length > 0 ? evidence : ['No source evidence imported yet.'],
     uncertainties: [
       'Which details need historical context versus implementation detail?',
