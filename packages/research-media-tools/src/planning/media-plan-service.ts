@@ -52,7 +52,6 @@ export const createMediaPlan = async ({
     if (!selected && !need.mustBeRealImage && need.generationPrompt) {
       const generated = await provider.generateImage({
         prompt: need.generationPrompt,
-        model: 'gpt-image-2',
         outputDirectory: 'artifacts/images',
       });
       const decision = evaluateMediaFit({ need, asset: generated, afterGeneration: true });

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createMediaPlan, createMockResearchMediaProvider } from '../src/index.js';
 
@@ -44,5 +44,30 @@ describe('createMediaPlan', () => {
 
     expect(plan.selections).toEqual([]);
     expect(plan.rejectedCandidates.some((candidate) => candidate.decision.decision === 'leave_empty')).toBe(true);
+  });
+
+  it('uses the provider default image model for generated fallback media', async () => {
+    const provider = createMockResearchMediaProvider();
+    const generateImage = vi.fn(provider.generateImage);
+
+    await createMediaPlan({
+      articleTitle: 'Frontend AI framework',
+      sections: [
+        {
+          id: 's1',
+          text: 'This concept framework explains frontend engineers reviewing AI generated code through experience constraints.',
+        },
+      ],
+      provider: {
+        ...provider,
+        async searchPhotos() {
+          return [];
+        },
+        generateImage,
+      },
+    });
+
+    expect(generateImage).toHaveBeenCalledOnce();
+    expect(generateImage.mock.calls[0][0]).not.toHaveProperty('model');
   });
 });

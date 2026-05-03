@@ -102,7 +102,7 @@ export interface MemeGenerationRequest {
 
 export interface ImageGenerationRequest {
   prompt: string;
-  model?: 'gpt-image-2';
+  model?: string;
   size?: '1024x1024' | '1536x1024' | '1024x1536';
   outputDirectory?: string;
 }

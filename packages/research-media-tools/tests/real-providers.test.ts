@@ -88,7 +88,7 @@ describe('real provider adapters', () => {
     expect(asset.url).toBe('https://api.memegen.link/images/drake/old-way/new-way.jpg');
   });
 
-  it('calls OpenAI image generation with gpt-image-2', async () => {
+  it('calls OpenAI image generation with the default base URL and model', async () => {
     const fetchFn = vi.fn().mockResolvedValue(jsonResponse({
       data: [{ b64_json: Buffer.from('mock image').toString('base64') }],
     }));
@@ -101,6 +101,75 @@ describe('real provider adapters', () => {
       kind: 'generated_image',
       provider: 'openai',
       model: 'gpt-image-2',
+      generated: true,
+    });
+  });
+
+  it('supports OpenAI-compatible image generation base URLs and custom image models', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(jsonResponse({
+      data: [{ b64_json: Buffer.from('mock image').toString('base64') }],
+    }));
+    const provider = createOpenAIImageProvider({
+      apiKey: 'proxy-key',
+      baseUrl: 'https://proxy.example.com/openai/v1/',
+      defaultModel: 'proxy-image-model',
+      fetchFn,
+      writeFile: vi.fn().mockResolvedValue(undefined),
+    });
+
+    const asset = await provider.generateImage({ prompt: 'A focused concept image' });
+
+    expect(fetchFn).toHaveBeenCalledWith('https://proxy.example.com/openai/v1/images/generations', expect.objectContaining({ method: 'POST' }));
+    expect(asset.model).toBe('proxy-image-model');
+  });
+
+  it('supports Gemini generateContent image responses with inline data', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(jsonResponse({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: Buffer.from('mock jpeg').toString('base64'),
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }));
+    const writeFile = vi.fn().mockResolvedValue(undefined);
+    const provider = createOpenAIImageProvider({
+      apiKey: 'proxy-key',
+      baseUrl: 'https://proxy.example.com/v1',
+      defaultModel: 'gemini-3-pro-image-preview',
+      apiStyle: 'gemini-generate-content',
+      endpointPath: '/v1beta/models/gemini-3-pro-image-preview:generateContent',
+      fetchFn,
+      writeFile,
+    });
+
+    const asset = await provider.generateImage({ prompt: 'A focused concept image', outputDirectory: 'artifacts/images' });
+
+    expect(fetchFn).toHaveBeenCalledWith('https://proxy.example.com/v1beta/models/gemini-3-pro-image-preview:generateContent', expect.objectContaining({ method: 'POST' }));
+    expect(JSON.parse((fetchFn.mock.calls[0][1] as RequestInit).body as string)).toEqual({
+      contents: [
+        {
+          parts: [
+            {
+              text: 'A focused concept image',
+            },
+          ],
+        },
+      ],
+    });
+    expect(writeFile.mock.calls[0][0]).toMatch(/\.jpg$/);
+    expect(asset).toMatchObject({
+      kind: 'generated_image',
+      provider: 'openai',
+      model: 'gemini-3-pro-image-preview',
       generated: true,
     });
   });

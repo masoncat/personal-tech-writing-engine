@@ -35,6 +35,10 @@ export const createDefaultToolsProvider = (): ResearchMediaProvider => {
     unsplashAccessKey: process.env.UNSPLASH_ACCESS_KEY ?? '',
     klipyApiKey: process.env.KLIPY_API_KEY ?? '',
     openaiApiKey: process.env.OPENAI_API_KEY ?? '',
+    openaiBaseUrl: process.env.OPENAI_BASE_URL,
+    openaiImageModel: process.env.OPENAI_IMAGE_MODEL,
+    openaiImageApiStyle: process.env.OPENAI_IMAGE_API_STYLE as 'openai-images' | 'gemini-generate-content' | undefined,
+    openaiImageEndpoint: process.env.OPENAI_IMAGE_ENDPOINT,
   });
 };
 
@@ -121,8 +125,8 @@ export const registerToolsCommands = (
     image
       .command('generate')
       .requiredOption('--prompt <prompt>', 'Image prompt')
-      .option('--model <model>', 'Image model', 'gpt-image-2')
-      .action(async (options: CommonOptions & { prompt: string; model: 'gpt-image-2' }) => {
+      .option('--model <model>', 'Image model')
+      .action(async (options: CommonOptions & { prompt: string; model?: string }) => {
         const provider = createToolsProvider();
         const result = await requireMethod(provider.generateImage, 'generateImage')({
           prompt: options.prompt,

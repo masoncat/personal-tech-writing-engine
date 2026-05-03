@@ -128,6 +128,43 @@ node --import tsx packages/cli/src/index.ts content complete \
   --render json
 ```
 
+### 配置 Research / Media API Keys
+
+真实搜索和配图 provider 从本地环境变量读取密钥。不要把真实密钥提交到仓库。
+
+本仓库提供 `.env.example` 作为变量名模板；真实密钥放在本地 `.env.local`，该文件已被 `.gitignore` 忽略。
+
+```bash
+# 使用真实 provider 运行工具命令
+node --env-file=.env.local --import tsx packages/cli/src/index.ts tools search photo \
+  --query "frontend engineer ai coding" \
+  --render json
+```
+
+需要配置的变量：
+
+```bash
+TAVILY_API_KEY=
+UNSPLASH_ACCESS_KEY=
+KLIPY_API_KEY=
+OPENAI_API_KEY=
+OPENAI_BASE_URL=
+OPENAI_IMAGE_MODEL=
+OPENAI_IMAGE_API_STYLE=
+OPENAI_IMAGE_ENDPOINT=
+PTCE_TOOLS_PROVIDER_MODE=real
+```
+
+`OPENAI_BASE_URL` 用于 OpenAI-compatible 中转服务，例如填到 `/v1` 这一层；不填时默认使用官方 `https://api.openai.com/v1`。`OPENAI_IMAGE_MODEL` 用于中转服务自己的图片模型名；不填时默认 `gpt-image-2`。
+
+如果图片模型需要走 Gemini `generateContent` 风格接口，配置：
+
+```bash
+OPENAI_IMAGE_MODEL=gemini-3-pro-image-preview
+OPENAI_IMAGE_API_STYLE=gemini-generate-content
+OPENAI_IMAGE_ENDPOINT=/v1beta/models/gemini-3-pro-image-preview:generateContent
+```
+
 ### 安装 Skills
 
 Skills 已内置在项目中（`.agents/skills/`），同时在 `packages/skills/` 下提供分发包。其他项目可通过 GitHub 安装：

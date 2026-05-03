@@ -349,6 +349,38 @@ describe('buildProgram', () => {
     });
   });
 
+  it('lets tools image generate use the provider default model when --model is omitted', async () => {
+    const stdout = createCaptureStream();
+    const generateImage = vi.fn().mockResolvedValue({
+      id: 'generated-1',
+      kind: 'generated_image',
+      localPath: 'artifacts/images/generated-1.png',
+      provider: 'openai',
+      generated: true,
+      model: 'proxy-image-model',
+      prompt: 'A concept image',
+    });
+    const program = buildProgram({ stdout, createToolsProvider: () => ({ generateImage }) });
+
+    await program.parseAsync([
+      'node',
+      'ptce',
+      'tools',
+      'image',
+      'generate',
+      '--prompt',
+      'A concept image',
+      '--render',
+      'json',
+    ]);
+
+    expect(generateImage).toHaveBeenCalledWith({
+      prompt: 'A concept image',
+      model: undefined,
+    });
+    expect(JSON.parse(stdout.output).model).toBe('proxy-image-model');
+  });
+
   it('uses the default base URL for task create and renders text output', async () => {
     const stdout = createCaptureStream();
     const request = vi.fn().mockResolvedValue({

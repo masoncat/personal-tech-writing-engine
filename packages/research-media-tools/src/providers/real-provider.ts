@@ -11,6 +11,10 @@ export interface RealProviderConfig {
   unsplashAccessKey: string;
   klipyApiKey: string;
   openaiApiKey: string;
+  openaiBaseUrl?: string;
+  openaiImageModel?: string;
+  openaiImageApiStyle?: 'openai-images' | 'gemini-generate-content';
+  openaiImageEndpoint?: string;
   fetchFn?: typeof fetch;
 }
 
@@ -20,7 +24,14 @@ export const createRealResearchMediaProvider = (config: RealProviderConfig): Res
   const unsplash = createUnsplashProvider({ accessKey: config.unsplashAccessKey, fetchFn: config.fetchFn });
   const klipy = createKlipyProvider({ apiKey: config.klipyApiKey, fetchFn: config.fetchFn });
   const memegen = createMemegenProvider();
-  const openai = createOpenAIImageProvider({ apiKey: config.openaiApiKey, fetchFn: config.fetchFn });
+  const openai = createOpenAIImageProvider({
+    apiKey: config.openaiApiKey,
+    baseUrl: config.openaiBaseUrl,
+    defaultModel: config.openaiImageModel,
+    apiStyle: config.openaiImageApiStyle,
+    endpointPath: config.openaiImageEndpoint,
+    fetchFn: config.fetchFn,
+  });
 
   return {
     searchWeb: tavily.searchWeb,
