@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, InvalidArgumentError } from 'commander';
 
 import {
   createMediaPlan,
@@ -16,8 +16,11 @@ import {
   writeRenderedOutput,
 } from '../output/renderers.js';
 
+export type CreateResearchPackageLike = typeof createResearchPackage;
+
 interface ToolsCommandDependencies {
   createToolsProvider: () => Partial<ResearchMediaProvider>;
+  createResearchPackage?: typeof createResearchPackage;
   stdout: Writer;
 }
 
@@ -44,8 +47,10 @@ export const createDefaultToolsProvider = (): ResearchMediaProvider => {
 
 export const registerToolsCommands = (
   program: Command,
-  { createToolsProvider, stdout }: ToolsCommandDependencies,
+  dependencies: ToolsCommandDependencies,
 ): void => {
+  const { createToolsProvider, stdout } = dependencies;
+  const createResearch = dependencies.createResearchPackage ?? createResearchPackage;
   const tools = program.command('tools').description('Search, extract, and plan research media');
   const search = tools.command('search').description('Search web, photos, and memes');
 
@@ -158,10 +163,26 @@ export const registerToolsCommands = (
       .command('research')
       .description('Create a research package')
       .requiredOption('--query <query>', 'Research query')
-      .action(async (options: CommonOptions & { query: string }) => {
+      .option('--topic <topic>', 'Search topic', 'news')
+      .option('--max-results <count>', 'Max search results', parsePositiveInt)
+      .option('--time-range <range>', 'Search time range (day, week, month, year)', createChoiceParser(['day', 'week', 'month', 'year'] as const, '--time-range'))
+      .option('--include-raw-content', 'Include raw provider content', false)
+      .action(async (options: CommonOptions & {
+        query: string;
+        topic: 'general' | 'news';
+        maxResults?: number;
+        timeRange?: 'day' | 'week' | 'month' | 'year';
+        includeRawContent: boolean;
+      }) => {
         const provider = createToolsProvider() as ResearchMediaProvider;
-        const result = await createResearchPackage({
-          queries: [{ query: options.query, topic: 'news' }],
+        const result = await createResearch({
+          queries: [{
+            query: options.query,
+            topic: options.topic,
+            maxResults: options.maxResults,
+            timeRange: options.timeRange,
+            includeRawContent: options.includeRawContent,
+          }],
           provider,
         });
         writeRenderedOutput(stdout, result, options.render);
@@ -182,4 +203,15 @@ const requireMethod = <T extends (...args: never[]) => unknown>(method: T | unde
     throw new Error(`Tools provider does not implement ${name}`);
   }
   return method;
+};
+
+const parsePositiveInt = (value: string): number => {
+  if (!/^\d+$/.test(value)) {
+    throw new InvalidArgumentError('--max-results must be a positive integer');
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new InvalidArgumentError('--max-results must be a positive integer');
+  }
+  return parsed;
 };

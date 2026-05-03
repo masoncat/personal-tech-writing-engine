@@ -17,6 +17,7 @@ import { registerTaskCommands } from './commands/task.js';
 import {
   createDefaultToolsProvider,
   registerToolsCommands,
+  type CreateResearchPackageLike,
 } from './commands/tools.js';
 import {
   registerWriteCommands,
@@ -33,6 +34,7 @@ export interface BuildProgramDependencies {
     baseUrl: string;
     createApiClient: (options: { baseUrl: string }) => ApiClientLike;
   }) => ProjectWriteRunnerLike;
+  createResearchPackage?: CreateResearchPackageLike;
   createToolsProvider?: typeof createDefaultToolsProvider;
   stdout?: Writer;
   stderr?: Writer;
@@ -41,6 +43,7 @@ export interface BuildProgramDependencies {
 export const buildProgram = ({
   createApiClient = defaultCreateApiClient,
   createWriteProjectRunner = createProjectWriteRunner,
+  createResearchPackage,
   createToolsProvider = createDefaultToolsProvider,
   stdout = process.stdout,
   stderr = process.stderr,
@@ -70,6 +73,7 @@ export const buildProgram = ({
   registerContentCommands(program, commandDependencies);
   registerToolsCommands(program, {
     createToolsProvider,
+    createResearchPackage,
     stdout,
   });
 

@@ -349,6 +349,72 @@ describe('buildProgram', () => {
     });
   });
 
+  it('passes freshness-oriented options to tools research', async () => {
+    const stdout = createCaptureStream();
+    const createResearchPackage = vi.fn().mockResolvedValue({
+      id: 'research-package-ai',
+      querySet: [],
+      sources: [],
+      evidenceBlocks: [],
+      unresolvedQuestions: [],
+      warnings: [],
+      createdAt: '2026-05-04T00:00:00.000Z',
+    });
+    const program = buildProgram({
+      stdout,
+      createToolsProvider: () => ({
+        async searchWeb() {
+          return {
+            query: 'unused',
+            provider: 'mock',
+            results: [],
+          };
+        },
+        async extractPage() {
+          return {
+            url: 'https://example.com',
+            extractedAt: '2026-05-04T00:00:00.000Z',
+            textContent: '',
+            evidenceBlocks: [],
+            images: [],
+            warnings: [],
+          };
+        },
+      }),
+      createResearchPackage,
+    });
+
+    await program.parseAsync([
+      'node',
+      'ptce',
+      'tools',
+      'research',
+      '--query',
+      'AI developer survey',
+      '--topic',
+      'news',
+      '--max-results',
+      '8',
+      '--time-range',
+      'year',
+      '--include-raw-content',
+      '--render',
+      'json',
+    ]);
+
+    expect(createResearchPackage).toHaveBeenCalledWith(expect.objectContaining({
+      queries: [
+        {
+          query: 'AI developer survey',
+          topic: 'news',
+          maxResults: 8,
+          timeRange: 'year',
+          includeRawContent: true,
+        },
+      ],
+    }));
+  });
+
   it('lets tools image generate use the provider default model when --model is omitted', async () => {
     const stdout = createCaptureStream();
     const generateImage = vi.fn().mockResolvedValue({
