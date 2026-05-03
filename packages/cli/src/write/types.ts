@@ -67,3 +67,26 @@ export interface ProjectWriteResult {
   skippedSources: SelectedProjectSource[];
   modelActions: string[];
 }
+
+export interface TopicWriteOptions {
+  topic: string;
+  audience: string;
+  purpose?: string;
+  channel: ExportChannel;
+  output: string;
+  withRealResearch: boolean;
+  withMedia: boolean;
+  currentDate: string;
+}
+
+export interface TopicWriteResult {
+  articlePath: string;
+  packageDirectory: string;
+  researchPackagePath: string;
+  freshnessAuditPath: string;
+  evidenceBedrockPath: string;
+  visualBriefsPath: string;
+  mediaPlanPath: string;
+  layoutReportPath: string;
+  assetDirectory: string;
+}

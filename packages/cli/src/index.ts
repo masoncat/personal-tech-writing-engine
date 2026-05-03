@@ -25,6 +25,7 @@ import {
 } from './commands/write.js';
 import type { Writer } from './output/renderers.js';
 import { createProjectWriteRunner } from './write/workflow-runner.js';
+import { createTopicPackageRunner } from './write/topic-package-runner.js';
 
 export type { ApiClientLike } from './client/api-client.js';
 
@@ -35,6 +36,7 @@ export interface BuildProgramDependencies {
     createApiClient: (options: { baseUrl: string }) => ApiClientLike;
   }) => ProjectWriteRunnerLike;
   createResearchPackage?: CreateResearchPackageLike;
+  createTopicPackageRunner?: typeof createTopicPackageRunner;
   createToolsProvider?: typeof createDefaultToolsProvider;
   stdout?: Writer;
   stderr?: Writer;
@@ -44,6 +46,7 @@ export const buildProgram = ({
   createApiClient = defaultCreateApiClient,
   createWriteProjectRunner = createProjectWriteRunner,
   createResearchPackage,
+  createTopicPackageRunner: defaultCreateTopicPackageRunner,
   createToolsProvider = createDefaultToolsProvider,
   stdout = process.stdout,
   stderr = process.stderr,
@@ -68,6 +71,7 @@ export const buildProgram = ({
   registerWriteCommands(program, {
     createApiClient,
     createWriteProjectRunner,
+    createTopicPackageRunner: defaultCreateTopicPackageRunner ?? createTopicPackageRunner,
     stdout,
   });
   registerContentCommands(program, commandDependencies);

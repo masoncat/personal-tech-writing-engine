@@ -10,6 +10,7 @@ import {
   type Writer,
   writeRenderedOutput,
 } from '../output/renderers.js';
+import type { TopicWriteOptions, TopicWriteResult } from '../write/types.js';
 import type {
   EditorialMode,
   ModelEnhancementMode,
@@ -22,12 +23,17 @@ export interface ProjectWriteRunnerLike {
   run(options: ProjectWriteOptions): Promise<ProjectWriteResult>;
 }
 
+export interface TopicPackageRunnerLike {
+  run(options: TopicWriteOptions): Promise<TopicWriteResult>;
+}
+
 export interface WriteCommandDependencies {
   createApiClient: (options: { baseUrl: string }) => ApiClientLike;
   createWriteProjectRunner: (options: {
     baseUrl: string;
     createApiClient: (options: { baseUrl: string }) => ApiClientLike;
   }) => ProjectWriteRunnerLike;
+  createTopicPackageRunner: () => TopicPackageRunnerLike;
   stdout: Writer;
 }
 
@@ -61,9 +67,20 @@ interface ProjectCommandOptions extends CommonOptions {
   modelEnhancement: ModelEnhancementMode;
 }
 
+interface TopicCommandOptions extends CommonOptions {
+  topic: string;
+  audience: string;
+  purpose?: string;
+  channel: ExportChannel;
+  output: string;
+  withRealResearch: boolean;
+  withMedia: boolean;
+  currentDate: string;
+}
+
 export const registerWriteCommands = (
   program: Command,
-  { createApiClient, createWriteProjectRunner, stdout }: WriteCommandDependencies,
+  { createApiClient, createWriteProjectRunner, createTopicPackageRunner, stdout }: WriteCommandDependencies,
 ): void => {
   const write = program.command('write').description('Run high-level PTCE writing workflows');
 
@@ -134,6 +151,40 @@ export const registerWriteCommands = (
           withObsidianContext: options.withObsidianContext,
           maxMaterials: options.maxMaterials,
           modelEnhancement: options.modelEnhancement,
+        });
+
+        writeRenderedOutput(stdout, result, options.render);
+      }),
+  );
+
+  withCommonOptions(
+    write
+      .command('topic')
+      .description('Generate an auditable article package from a topic')
+      .requiredOption('--topic <topic>', 'Writing topic')
+      .requiredOption('--audience <audience>', 'Target reader')
+      .option('--purpose <purpose>', 'Writing purpose')
+      .option(
+        '--channel <channel>',
+        `Preferred channel (${CHANNELS.join(', ')})`,
+        createChoiceParser(CHANNELS, '--channel'),
+        'wechat',
+      )
+      .requiredOption('--output <path>', 'Article markdown output path')
+      .option('--with-real-research', 'Require real research providers', false)
+      .option('--with-media', 'Generate media assets', false)
+      .requiredOption('--current-date <date>', 'Current date in YYYY-MM-DD format')
+      .action(async (options: TopicCommandOptions) => {
+        const runner = createTopicPackageRunner();
+        const result = await runner.run({
+          topic: options.topic,
+          audience: options.audience,
+          purpose: options.purpose,
+          channel: options.channel,
+          output: options.output,
+          withRealResearch: options.withRealResearch,
+          withMedia: options.withMedia,
+          currentDate: options.currentDate,
         });
 
         writeRenderedOutput(stdout, result, options.render);

@@ -83,6 +83,7 @@ describe('buildProgram', () => {
     ]);
     expect(program.commands.find((command) => command.name() === 'write')?.commands.map((command) => command.name())).toEqual([
       'project',
+      'topic',
     ]);
     expect(program.commands.find((command) => command.name() === 'content')?.commands.map((command) => command.name())).toEqual([
       'create',
@@ -104,7 +105,7 @@ describe('buildProgram', () => {
     const program = buildProgram();
     const writeCommand = program.commands.find((command) => command.name() === 'write');
 
-    expect(writeCommand?.commands.map((command) => command.name())).toEqual(['project']);
+    expect(writeCommand?.commands.map((command) => command.name())).toEqual(['project', 'topic']);
   });
 
   it('posts content create payloads and renders json output', async () => {
@@ -946,6 +947,58 @@ describe('buildProgram', () => {
     expect(stdout.output).toContain('"selectedSources"');
     expect(stdout.output).toContain('"id": "README.md"');
     expect(stdout.output).toContain('"modelActions"');
+  });
+
+  it('maps write topic options into the topic package runner', async () => {
+    const stdout = createCaptureStream();
+    const run = vi.fn().mockResolvedValue({
+      articlePath: '/tmp/article.md',
+      packageDirectory: '/tmp',
+      researchPackagePath: '/tmp/research-package.json',
+      freshnessAuditPath: '/tmp/freshness-audit.json',
+      evidenceBedrockPath: '/tmp/evidence-bedrock.json',
+      visualBriefsPath: '/tmp/visual-briefs.json',
+      mediaPlanPath: '/tmp/media-plan.json',
+      layoutReportPath: '/tmp/layout-report.json',
+      assetDirectory: '/tmp/assets',
+    });
+    const program = buildProgram({
+      stdout,
+      createTopicPackageRunner: () => ({ run }),
+    });
+
+    await program.parseAsync([
+      'node',
+      'ptce',
+      'write',
+      'topic',
+      '--topic',
+      '前端工程师在 AI 时代的出路',
+      '--audience',
+      '3-5年经验前端工程师',
+      '--channel',
+      'wechat',
+      '--output',
+      '/tmp/article.md',
+      '--with-real-research',
+      '--with-media',
+      '--current-date',
+      '2026-05-04',
+      '--render',
+      'json',
+    ]);
+
+    expect(run).toHaveBeenCalledWith({
+      topic: '前端工程师在 AI 时代的出路',
+      audience: '3-5年经验前端工程师',
+      channel: 'wechat',
+      output: '/tmp/article.md',
+      purpose: undefined,
+      withRealResearch: true,
+      withMedia: true,
+      currentDate: '2026-05-04',
+    });
+    expect(JSON.parse(stdout.output).articlePath).toBe('/tmp/article.md');
   });
 
   it('fails fast for invalid write project max-materials values before invoking the runner', async () => {
