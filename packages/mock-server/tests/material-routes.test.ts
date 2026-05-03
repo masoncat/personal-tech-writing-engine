@@ -350,6 +350,7 @@ const createTaskFixture = (): WritingTask => ({
   id: 'task-test',
   title: 'Task test',
   articleType: 'implementation-notes',
+  preferredChannel: 'blog',
   reader: 'backend engineers',
   stage: TaskStage.Created,
   createdAt: '2026-04-26T00:00:00.000Z',

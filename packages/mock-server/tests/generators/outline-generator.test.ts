@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { InformationBedrock, WritingTask } from '@ptce/shared';
+import { TaskStage, type InformationBedrock, type WritingTask } from '@ptce/shared';
 
 import { generateOutline } from '../../src/generators/outline-generator.js';
 
@@ -10,7 +10,7 @@ const retrospectiveTask: WritingTask = {
   articleType: 'build-retrospective',
   preferredChannel: 'blog',
   reader: '对 agent 感兴趣但还没真正上手的开发者',
-  stage: 'collecting_materials',
+  stage: TaskStage.CollectingMaterials,
   createdAt: '2026-04-26T00:00:00.000Z',
   updatedAt: '2026-04-26T00:00:00.000Z',
 };
@@ -21,7 +21,7 @@ const genericTask: WritingTask = {
   articleType: 'deep-dive',
   preferredChannel: 'blog',
   reader: '工程团队',
-  stage: 'collecting_materials',
+  stage: TaskStage.CollectingMaterials,
   createdAt: '2026-04-26T00:00:00.000Z',
   updatedAt: '2026-04-26T00:00:00.000Z',
 };

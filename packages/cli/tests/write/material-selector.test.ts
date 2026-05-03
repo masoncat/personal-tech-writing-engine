@@ -84,10 +84,10 @@ describe('selectProjectSources', () => {
 
   it('passes select-only as the provider-facing model enhancement mode', async () => {
     const selectMaterials = vi.fn().mockResolvedValue({
-      selected: [{ id: 'readme', role: 'project-definition', reason: 'highest signal' }],
+      selected: [{ id: 'readme', role: 'project-definition' as const, reason: 'highest signal' }],
       skipped: [
-        { id: 'article', role: 'background-only', reason: 'not selected' },
-        { id: 'plan', role: 'background-only', reason: 'not selected' },
+        { id: 'article', role: 'background-only' as const, reason: 'not selected' },
+        { id: 'plan', role: 'background-only' as const, reason: 'not selected' },
       ],
       action: 'selected_materials',
     });
@@ -138,10 +138,10 @@ describe('selectProjectSources', () => {
   it('keeps select-only normalization and intent enhancement deterministic even if options are stale', async () => {
     const provider = {
       selectMaterials: async () => ({
-        selected: [{ id: 'readme', role: 'project-definition', reason: 'highest signal' }],
+        selected: [{ id: 'readme', role: 'project-definition' as const, reason: 'highest signal' }],
         skipped: [
-          { id: 'article', role: 'background-only', reason: 'not selected' },
-          { id: 'plan', role: 'background-only', reason: 'not selected' },
+          { id: 'article', role: 'background-only' as const, reason: 'not selected' },
+          { id: 'plan', role: 'background-only' as const, reason: 'not selected' },
         ],
         action: 'selected_materials',
       }),

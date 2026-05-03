@@ -3,16 +3,22 @@ import { join } from 'node:path';
 
 import { FileStore } from './repository/file-store.js';
 import { BedrockRepository } from './repository/bedrock-repository.js';
+import { ContentTaskRepository } from './repository/content-task-repository.js';
+import { ContentArtifactRepository } from './repository/content-artifact-repository.js';
 import { ExportRepository } from './repository/export-repository.js';
 import { MaterialRepository } from './repository/material-repository.js';
 import { OutlineRepository } from './repository/outline-repository.js';
+import { OutputPackageRepository } from './repository/output-package-repository.js';
 import { StyleProfileRepository } from './repository/style-profile-repository.js';
 import { TaskRepository } from './repository/task-repository.js';
 import { VersionRepository } from './repository/version-repository.js';
+import { registerContentMetadataRoutes } from './routes/content-metadata-routes.js';
+import { registerContentTaskRoutes } from './routes/content-task-routes.js';
 import { registerMaterialRoutes } from './routes/material-routes.js';
 import { registerTaskRoutes } from './routes/task-routes.js';
 import { registerWorkflowRoutes } from './routes/workflow-routes.js';
 import { BedrockService } from './services/bedrock-service.js';
+import { ContentTaskService } from './services/content-task-service.js';
 import { DraftService } from './services/draft-service.js';
 import { ExportService } from './services/export-service.js';
 import { MaterialService } from './services/material-service.js';
@@ -33,6 +39,18 @@ export const buildApp = ({ dataDir }: BuildAppOptions): FastifyInstance => {
     new FileStore({
       dataDir,
       fileName: 'tasks.json',
+    }),
+  );
+  const contentTaskRepository = new ContentTaskRepository(
+    new FileStore({
+      dataDir,
+      fileName: 'content-tasks.json',
+    }),
+  );
+  const contentArtifactRepository = new ContentArtifactRepository(
+    new FileStore({
+      dataDir,
+      fileName: 'content-artifacts.json',
     }),
   );
   const materialRepository = new MaterialRepository(
@@ -71,8 +89,19 @@ export const buildApp = ({ dataDir }: BuildAppOptions): FastifyInstance => {
       fileName: 'exports.json',
     }),
   );
+  const outputPackageRepository = new OutputPackageRepository(
+    new FileStore({
+      dataDir,
+      fileName: 'output-packages.json',
+    }),
+  );
 
   const taskService = new TaskService(taskRepository);
+  const contentTaskService = new ContentTaskService(
+    contentTaskRepository,
+    contentArtifactRepository,
+    outputPackageRepository,
+  );
   const materialService = new MaterialService(taskRepository, materialRepository);
   const obsidianImportService = new ObsidianImportService(materialService);
   const bedrockService = new BedrockService(
@@ -107,6 +136,8 @@ export const buildApp = ({ dataDir }: BuildAppOptions): FastifyInstance => {
   );
 
   registerTaskRoutes(app, { taskService });
+  registerContentTaskRoutes(app, { contentTaskService });
+  registerContentMetadataRoutes(app);
   registerMaterialRoutes(app, { materialService });
   registerWorkflowRoutes(app, {
     obsidianImportService,

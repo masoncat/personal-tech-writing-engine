@@ -7,6 +7,7 @@ import {
   type ApiClientLike,
 } from './client/api-client.js';
 import { registerBedrockCommands } from './commands/bedrock.js';
+import { registerContentCommands } from './commands/content.js';
 import { registerDraftCommands } from './commands/draft.js';
 import { registerExportCommands } from './commands/export.js';
 import { registerMaterialCommands } from './commands/material.js';
@@ -60,6 +61,7 @@ export const buildProgram = ({
     createWriteProjectRunner,
     stdout,
   });
+  registerContentCommands(program, commandDependencies);
 
   program.configureOutput({
     writeErr: (value) => {

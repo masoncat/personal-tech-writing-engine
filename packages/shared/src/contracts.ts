@@ -9,13 +9,45 @@ import type {
   Material,
   MaterialType,
   WritingTask,
+  ContentTask,
+  ContentSubtype,
+  ContentType,
 } from './domain.js';
+import type { WorkflowProfile } from './content-profiles.js';
+import type { OutputPackage } from './output-package.js';
+import type { ContentArtifact, ContentArtifactCreator, ContentArtifactFormat } from './output-package.js';
+import type { QualityRubric } from './quality-rubrics.js';
+import type { WritingSkillBinding } from './writing-skill-bindings.js';
 
 export interface CreateTaskRequest {
   title: string;
   articleType: string;
   preferredChannel?: ExportChannel;
   reader: string;
+}
+
+export interface CreateContentTaskRequest {
+  title: string;
+  contentType: ContentType;
+  contentSubtype: ContentSubtype;
+  audience: string;
+  purpose?: string;
+  preferredChannel?: ExportChannel;
+  sourceMaterialRefs?: string[];
+}
+
+export interface RunContentTaskRequest {
+  actionId?: string;
+  untilActionId?: string;
+  dryRun?: boolean;
+}
+
+export interface AddContentArtifactRequest {
+  artifactType: string;
+  title: string;
+  content: string;
+  format: ContentArtifactFormat;
+  createdBy: ContentArtifactCreator;
 }
 
 export interface AddMaterialRequest {
@@ -61,6 +93,22 @@ export type GenerateExportRequest = LocalExportRequest | ObsidianExportRequest;
 
 export interface TaskEnvelope {
   task: WritingTask;
+}
+
+export interface ContentTaskEnvelope {
+  task: ContentTask;
+  workflowProfile: WorkflowProfile;
+  qualityRubric: QualityRubric;
+  skillBinding: WritingSkillBinding;
+  outputPackage: OutputPackage;
+}
+
+export interface ContentRunResponse extends ContentTaskEnvelope {
+  executedActionIds: string[];
+}
+
+export interface ContentArtifactsResponse extends ContentTaskEnvelope {
+  artifacts: ContentArtifact[];
 }
 
 export interface VersionResponse extends TaskEnvelope {

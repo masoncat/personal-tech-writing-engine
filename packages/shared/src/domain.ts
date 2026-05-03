@@ -22,6 +22,71 @@ export type ExportChannel = 'blog' | 'wechat';
 export type ExportFormat = 'markdown';
 export type ExportTarget = 'local' | 'obsidian';
 
+export type ContentType = 'general' | 'public_article' | 'prd' | 'technical_doc';
+
+export type PublicArticleSubtype =
+  | 'narrative_article'
+  | 'source_analysis'
+  | 'tool_experience'
+  | 'project_retrospective';
+
+export type PrdSubtype =
+  | 'feature_prd'
+  | 'mvp_scope'
+  | 'product_strategy'
+  | 'requirement_review';
+
+export type TechnicalDocSubtype =
+  | 'tutorial'
+  | 'how_to'
+  | 'reference'
+  | 'explanation'
+  | 'troubleshooting'
+  | 'quickstart';
+
+export type GeneralWritingSubtype =
+  | 'memo'
+  | 'email'
+  | 'explanation'
+  | 'mixed_draft';
+
+export type ContentSubtype =
+  | PublicArticleSubtype
+  | PrdSubtype
+  | TechnicalDocSubtype
+  | GeneralWritingSubtype;
+
+export type ContentTaskStatus =
+  | 'planning'
+  | 'running'
+  | 'waiting_for_user'
+  | 'blocked'
+  | 'completed';
+
+export interface SourceRequirement {
+  kind: 'user_input' | 'project_files' | 'research_package' | 'code_reference' | 'style_sample';
+  required: boolean;
+  description: string;
+}
+
+export interface ContentTask {
+  id: string;
+  title: string;
+  contentType: ContentType;
+  contentSubtype: ContentSubtype;
+  workflowProfileId: string;
+  qualityRubricId: string;
+  skillBindingId: string;
+  preferredChannel?: ExportChannel;
+  audience: string;
+  purpose?: string;
+  sourceRequirements: SourceRequirement[];
+  currentActionId: string;
+  status: ContentTaskStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WritingTask {
   id: string;
   title: string;

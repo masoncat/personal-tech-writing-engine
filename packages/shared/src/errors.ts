@@ -6,6 +6,7 @@ export enum ErrorCode {
   MaterialNotFound = 'MATERIAL_NOT_FOUND',
   VersionNotFound = 'VERSION_NOT_FOUND',
   InvalidArgument = 'INVALID_ARGUMENT',
+  UnsupportedContentRunner = 'UNSUPPORTED_CONTENT_RUNNER',
 }
 
 export interface AppErrorShape {

@@ -49,6 +49,7 @@ describe('buildProgram', () => {
       'rewrite',
       'export',
       'write',
+      'content',
     ]);
 
     expect(program.commands.find((command) => command.name() === 'task')?.commands.map((command) => command.name())).toEqual([
@@ -82,6 +83,12 @@ describe('buildProgram', () => {
     expect(program.commands.find((command) => command.name() === 'write')?.commands.map((command) => command.name())).toEqual([
       'project',
     ]);
+    expect(program.commands.find((command) => command.name() === 'content')?.commands.map((command) => command.name())).toEqual([
+      'create',
+      'run',
+      'artifact',
+      'complete',
+    ]);
   });
 
   it('registers the write command group with the project subcommand', () => {
@@ -89,6 +96,216 @@ describe('buildProgram', () => {
     const writeCommand = program.commands.find((command) => command.name() === 'write');
 
     expect(writeCommand?.commands.map((command) => command.name())).toEqual(['project']);
+  });
+
+  it('posts content create payloads and renders json output', async () => {
+    const stdout = createCaptureStream();
+    const request = vi.fn().mockResolvedValue({
+      task: {
+        id: 'content-task-1',
+        title: 'MVP review flow',
+        contentType: 'prd',
+        contentSubtype: 'mvp_scope',
+        workflowProfileId: 'prd.default',
+        qualityRubricId: 'prd.default',
+        skillBindingId: 'prd.primary',
+        audience: 'founder and implementation agent',
+        currentActionId: 'problem_brief',
+        sourceRequirements: [],
+        status: 'planning',
+        createdAt: '2026-05-02T00:00:00.000Z',
+        updatedAt: '2026-05-02T00:00:00.000Z',
+      },
+      workflowProfile: { id: 'prd.default' },
+      qualityRubric: { id: 'prd.default' },
+      skillBinding: { id: 'prd.primary' },
+      outputPackage: { id: 'output-package-1' },
+    });
+    const createApiClient = vi.fn(
+      (): ApiClientLike => ({
+        request,
+      }),
+    );
+    const program = buildProgram({ createApiClient, stdout });
+
+    await program.parseAsync([
+      'node',
+      'ptce',
+      'content',
+      'create',
+      '--title',
+      'MVP review flow',
+      '--type',
+      'prd',
+      '--subtype',
+      'mvp_scope',
+      '--audience',
+      'founder and implementation agent',
+      '--purpose',
+      'align scope',
+      '--render',
+      'json',
+    ]);
+
+    expect(request).toHaveBeenCalledWith({
+      method: 'POST',
+      path: '/content-tasks',
+      body: {
+        title: 'MVP review flow',
+        contentType: 'prd',
+        contentSubtype: 'mvp_scope',
+        audience: 'founder and implementation agent',
+        purpose: 'align scope',
+        preferredChannel: undefined,
+      },
+    });
+    expect(JSON.parse(stdout.output).task.id).toBe('content-task-1');
+  });
+
+  it('posts content run requests and renders json output', async () => {
+    const stdout = createCaptureStream();
+    const request = vi.fn().mockResolvedValue({
+      task: {
+        id: 'content-task-1',
+        title: 'Build retrospective',
+        contentType: 'public_article',
+        contentSubtype: 'project_retrospective',
+        workflowProfileId: 'public_article.default',
+        qualityRubricId: 'public_article.default',
+        skillBindingId: 'public_article.primary',
+        audience: 'technical founders',
+        currentActionId: 'finish',
+        sourceRequirements: [],
+        status: 'completed',
+        createdAt: '2026-05-02T00:00:00.000Z',
+        updatedAt: '2026-05-02T00:00:00.000Z',
+      },
+      workflowProfile: { id: 'public_article.default' },
+      qualityRubric: { id: 'public_article.default' },
+      skillBinding: { id: 'public_article.primary' },
+      outputPackage: { id: 'output-package-1' },
+      executedActionIds: ['appeal_brief'],
+    });
+    const createApiClient = vi.fn(
+      (): ApiClientLike => ({
+        request,
+      }),
+    );
+    const program = buildProgram({ createApiClient, stdout });
+
+    await program.parseAsync([
+      'node',
+      'ptce',
+      'content',
+      'run',
+      '--task-id',
+      'content-task-1',
+      '--until',
+      'draft',
+      '--render',
+      'json',
+    ]);
+
+    expect(request).toHaveBeenCalledWith({
+      method: 'POST',
+      path: '/content-tasks/content-task-1/runs',
+      body: {
+        untilActionId: 'draft',
+      },
+    });
+    expect(JSON.parse(stdout.output).executedActionIds).toEqual(['appeal_brief']);
+  });
+
+  it('posts content artifact add requests from a file and renders json output', async () => {
+    const stdout = createCaptureStream();
+    const root = await mkdtemp(join(tmpdir(), 'ptce-cli-artifact-'));
+    tempDirs.push(root);
+    const draftPath = join(root, 'draft.md');
+    await writeFile(draftPath, '# 技术设计文档\n\n正文');
+    const request = vi.fn().mockResolvedValue({
+      task: { id: 'content-task-1' },
+      workflowProfile: { id: 'technical_doc.default' },
+      qualityRubric: { id: 'technical_doc.default' },
+      skillBinding: { id: 'technical_doc.primary' },
+      outputPackage: { id: 'output-package-1' },
+      artifacts: [{ id: 'artifact-1' }],
+    });
+    const createApiClient = vi.fn(
+      (): ApiClientLike => ({
+        request,
+      }),
+    );
+    const program = buildProgram({ createApiClient, stdout });
+
+    await program.parseAsync([
+      'node',
+      'ptce',
+      'content',
+      'artifact',
+      'add',
+      '--task-id',
+      'content-task-1',
+      '--type',
+      'technical_draft',
+      '--title',
+      '技术设计文档',
+      '--content-file',
+      draftPath,
+      '--format',
+      'markdown',
+      '--created-by',
+      'agent',
+      '--render',
+      'json',
+    ]);
+
+    expect(request).toHaveBeenCalledWith({
+      method: 'POST',
+      path: '/content-tasks/content-task-1/artifacts',
+      body: {
+        artifactType: 'technical_draft',
+        title: '技术设计文档',
+        content: '# 技术设计文档\n\n正文',
+        format: 'markdown',
+        createdBy: 'agent',
+      },
+    });
+    expect(JSON.parse(stdout.output).artifacts[0].id).toBe('artifact-1');
+  });
+
+  it('posts content complete requests and renders json output', async () => {
+    const stdout = createCaptureStream();
+    const request = vi.fn().mockResolvedValue({
+      task: { id: 'content-task-1', status: 'completed' },
+      workflowProfile: { id: 'general.default' },
+      qualityRubric: { id: 'general.default' },
+      skillBinding: { id: 'general.primary' },
+      outputPackage: { id: 'output-package-1', readiness: 'review_ready' },
+    });
+    const createApiClient = vi.fn(
+      (): ApiClientLike => ({
+        request,
+      }),
+    );
+    const program = buildProgram({ createApiClient, stdout });
+
+    await program.parseAsync([
+      'node',
+      'ptce',
+      'content',
+      'complete',
+      '--task-id',
+      'content-task-1',
+      '--render',
+      'json',
+    ]);
+
+    expect(request).toHaveBeenCalledWith({
+      method: 'POST',
+      path: '/content-tasks/content-task-1/complete',
+      body: {},
+    });
+    expect(JSON.parse(stdout.output).task.status).toBe('completed');
   });
 
   it('uses the default base URL for task create and renders text output', async () => {
