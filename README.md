@@ -128,6 +128,30 @@ node --import tsx packages/cli/src/index.ts content complete \
   --render json
 ```
 
+### 从主题生成文章输出包
+
+```bash
+node --env-file=.env.local --import tsx packages/cli/src/index.ts write topic \
+  --topic "前端工程师在 AI 时代的出路" \
+  --audience "3-5年经验前端工程师" \
+  --channel wechat \
+  --output /Users/a1234/Workspace/youmind/outputs/frontend-engineer-ai-era-wechat.md \
+  --with-real-research \
+  --with-media \
+  --current-date 2026-05-04 \
+  --render json
+```
+
+输出同级 package 文件：
+
+- `research-package.json`
+- `freshness-audit.json`
+- `evidence-bedrock.json`
+- `visual-briefs.json`
+- `media-plan.json`
+- `layout-report.json`
+- `assets/`
+
 ### 配置 Research / Media API Keys
 
 真实搜索和配图 provider 从本地环境变量读取密钥。不要把真实密钥提交到仓库。
