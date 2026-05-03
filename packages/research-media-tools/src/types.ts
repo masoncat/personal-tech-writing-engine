@@ -196,3 +196,95 @@ export interface ResearchPackage {
   warnings: string[];
   createdAt: string;
 }
+
+export type ResearchQueryIntent =
+  | 'official_report'
+  | 'official_blog'
+  | 'product_announcement'
+  | 'news_analysis'
+  | 'counterpoint';
+
+export interface PlannedResearchQuery {
+  query: string;
+  topic: 'general' | 'news';
+  intent: ResearchQueryIntent;
+  maxResults: number;
+  timeRange?: 'day' | 'week' | 'month' | 'year';
+}
+
+export interface ResearchQueryPlan {
+  topic: string;
+  currentDate: string;
+  queries: PlannedResearchQuery[];
+}
+
+export type SourceType =
+  | 'annual_report'
+  | 'survey_pulse'
+  | 'product_announcement'
+  | 'news'
+  | 'analysis'
+  | 'unknown';
+
+export type SourceFreshness = 'current' | 'latest_available' | 'stale' | 'undated';
+
+export interface FreshnessSourceAssessment {
+  url: string;
+  title: string;
+  publishedAt?: string;
+  sourceYear?: number;
+  sourceType: SourceType;
+  freshness: SourceFreshness;
+  usageBoundary: string;
+}
+
+export interface FreshnessWarning {
+  code:
+    | 'stale_source'
+    | 'missing_date'
+    | 'latest_annual_not_current_year'
+    | 'insufficient_current_year_sources';
+  message: string;
+  sourceUrl?: string;
+}
+
+export interface FreshnessAudit {
+  currentDate: string;
+  topicTimeSensitivity: 'low' | 'medium' | 'high';
+  sources: FreshnessSourceAssessment[];
+  warnings: FreshnessWarning[];
+  requiredDisclosures: string[];
+  pass: boolean;
+}
+
+export interface EvidenceCard {
+  id: string;
+  claim: string;
+  sourceUrls: string[];
+  sourceBoundary: string;
+  freshness: SourceFreshness;
+  quoteSafeSummary: string;
+}
+
+export interface EvidenceBedrock {
+  id: string;
+  topic: string;
+  cards: EvidenceCard[];
+  requiredDisclosures: string[];
+  createdAt: string;
+}
+
+export type VisualBriefRole = 'section_summary' | 'concept_map' | 'comparison' | 'workflow' | 'dashboard';
+export type VisualBriefStyle = 'wechat_infographic' | 'dark_dashboard' | 'product_map';
+
+export interface VisualBrief {
+  id: string;
+  sectionId: string;
+  placementAfterAnchor: string;
+  role: VisualBriefRole;
+  coreMessage: string;
+  chartText: string[];
+  style: VisualBriefStyle;
+  prompt: string;
+  negativePrompt: string;
+}

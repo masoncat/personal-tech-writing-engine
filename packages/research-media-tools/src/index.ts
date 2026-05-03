@@ -11,4 +11,5 @@ export * from './providers/real-provider.js';
 export * from './planning/media-fit-evaluator.js';
 export * from './planning/media-need-planner.js';
 export * from './planning/media-plan-service.js';
+export * from './planning/research-query-planner.js';
 export * from './research/research-service.js';
