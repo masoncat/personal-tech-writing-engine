@@ -15,6 +15,10 @@ import { registerOutlineCommands } from './commands/outline.js';
 import { registerRewriteCommands } from './commands/rewrite.js';
 import { registerTaskCommands } from './commands/task.js';
 import {
+  createDefaultToolsProvider,
+  registerToolsCommands,
+} from './commands/tools.js';
+import {
   registerWriteCommands,
   type ProjectWriteRunnerLike,
 } from './commands/write.js';
@@ -29,6 +33,7 @@ export interface BuildProgramDependencies {
     baseUrl: string;
     createApiClient: (options: { baseUrl: string }) => ApiClientLike;
   }) => ProjectWriteRunnerLike;
+  createToolsProvider?: typeof createDefaultToolsProvider;
   stdout?: Writer;
   stderr?: Writer;
 }
@@ -36,6 +41,7 @@ export interface BuildProgramDependencies {
 export const buildProgram = ({
   createApiClient = defaultCreateApiClient,
   createWriteProjectRunner = createProjectWriteRunner,
+  createToolsProvider = createDefaultToolsProvider,
   stdout = process.stdout,
   stderr = process.stderr,
 }: BuildProgramDependencies = {}): Command => {
@@ -62,6 +68,10 @@ export const buildProgram = ({
     stdout,
   });
   registerContentCommands(program, commandDependencies);
+  registerToolsCommands(program, {
+    createToolsProvider,
+    stdout,
+  });
 
   program.configureOutput({
     writeErr: (value) => {

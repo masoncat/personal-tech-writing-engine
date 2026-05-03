@@ -53,6 +53,12 @@ Before writing a single paragraph, list the real data sources you will anchor cl
 
 **Output requirement: every article must end with a "来源边界" section listing all data sources used and distinguishing facts from analysis.**
 
+Research package requirement:
+
+- When the topic depends on current facts, company actions, product changes, public reports, market data, or news, create a `research_package` before drafting.
+- Search results are discovery candidates. Do not cite a search snippet as a strong source.
+- Facts should come from extracted page text, official pages, reports, announcements, or named datasets.
+
 ### Gate 3: Angle Validation
 
 - Is the article's core insight non-obvious? If a reader could get the same insight from reading the top 3 search results, the angle is too shallow.
@@ -189,6 +195,16 @@ Required behavior:
 - Add 3-5 `![图片]` placeholders for technical/product articles when no real images are available yet.
 - Keep key judgments as standalone paragraphs, but avoid continuous standalone-line fragmentation.
 - Run the hard scan in the rubric before final output.
+
+Media plan requirement:
+
+- Images must serve the current section. Do not add images just to fill space.
+- For factual/news images, use extracted page images from credible source pages. Do not replace factual images with Unsplash or AI-generated images.
+- Use Unsplash only for conceptual or mood photos.
+- Use KLIPY for existing hot memes and memegen for template-based custom memes.
+- Use `gpt-image-2` only when searched candidates do not fit and an AI-generated image can clearly support the context.
+- If no candidate or generated image fits, leave the slot empty.
+- Every final article with images must include a picture source boundary listing source URL, attribution, usage boundary, and whether the image is AI-generated.
 
 ## Post-Writing Self-Audit (MANDATORY — run before declaring the article done)
 

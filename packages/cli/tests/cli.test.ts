@@ -50,6 +50,7 @@ describe('buildProgram', () => {
       'export',
       'write',
       'content',
+      'tools',
     ]);
 
     expect(program.commands.find((command) => command.name() === 'task')?.commands.map((command) => command.name())).toEqual([
@@ -88,6 +89,14 @@ describe('buildProgram', () => {
       'run',
       'artifact',
       'complete',
+    ]);
+    expect(program.commands.find((command) => command.name() === 'tools')?.commands.map((command) => command.name())).toEqual([
+      'search',
+      'page',
+      'meme',
+      'image',
+      'media',
+      'research',
     ]);
   });
 
@@ -306,6 +315,38 @@ describe('buildProgram', () => {
       body: {},
     });
     expect(JSON.parse(stdout.output).task.status).toBe('completed');
+  });
+
+  it('runs tools search web with an injected tools provider', async () => {
+    const stdout = createCaptureStream();
+    const toolsProvider = {
+      async searchWeb() {
+        return {
+          query: 'latest ai news',
+          provider: 'mock',
+          results: [],
+        };
+      },
+    };
+    const program = buildProgram({ stdout, createToolsProvider: () => toolsProvider });
+
+    await program.parseAsync([
+      'node',
+      'ptce',
+      'tools',
+      'search',
+      'web',
+      '--query',
+      'latest ai news',
+      '--render',
+      'json',
+    ]);
+
+    expect(JSON.parse(stdout.output)).toEqual({
+      query: 'latest ai news',
+      provider: 'mock',
+      results: [],
+    });
   });
 
   it('uses the default base URL for task create and renders text output', async () => {

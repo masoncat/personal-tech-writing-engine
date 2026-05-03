@@ -68,6 +68,16 @@ node --import tsx packages/cli/src/index.ts content create \
 
 Capture the returned `taskId`.
 
+### Phase 3.5: Research and Media Tools
+
+For public articles, decide whether the article needs research or media before drafting:
+
+- If the article includes latest facts, company/product actions, market data, public reports, or current events, run `ptce tools research --query "<query>" --render json` and store the result as a `research_package` artifact.
+- If the article needs images, run `ptce tools media plan --title "<title>" --section "<section context>" --render json` and store the result as a `media_plan` artifact.
+- Do not treat Tavily snippets as strong evidence. Strong evidence requires page extraction in the research package.
+- Do not use Unsplash or AI-generated images as factual evidence.
+- A media plan with zero selected images is valid when candidates do not fit the article context.
+
 ### Phase 4: Write
 
 Write the document using the primary writing skill. Core rules across all content types:

@@ -12,6 +12,7 @@
     "test": "vitest --run"
   },
   "dependencies": {
+    "@ptce/research-media-tools": "0.1.0",
     "@ptce/shared": "0.1.0",
     "commander": "^14.0.0",
     "zod": "^3.24.3"
